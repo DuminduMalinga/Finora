@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'expense_model.dart';
 import 'expense_history_screen.dart';
+import 'budget_overview_screen.dart';
 import 'finora_theme.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -29,7 +30,13 @@ class DashboardScreen extends StatelessWidget {
               const SizedBox(height: 22),
               const MonthSelector(),
               const SizedBox(height: 14),
-              const BalanceCard(),
+              BalanceCard(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const BudgetOverviewScreen(),
+                  ),
+                ),
+              ),
               const SizedBox(height: 24),
               SectionHeader(
                 title: 'Spending overview',
@@ -162,113 +169,122 @@ class MonthSelector extends StatelessWidget {
 }
 
 class BalanceCard extends StatelessWidget {
-  const BalanceCard({super.key});
+  const BalanceCard({super.key, this.onTap});
+
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: navy,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x2214213D),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text(
-                'TOTAL SPENT',
-                style: TextStyle(
-                  color: Color(0xFFB4C0D4),
-                  fontSize: 11,
-                  letterSpacing: 1.2,
-                  fontWeight: FontWeight.w700,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: navy,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x2214213D),
+              blurRadius: 16,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  'TOTAL SPENT',
+                  style: TextStyle(
+                    color: Color(0xFFB4C0D4),
+                    fontSize: 11,
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                decoration: BoxDecoration(
-                  color: const Color(0x2234D399),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.trending_down_rounded,
-                      color: Color(0xFF6EE7B7),
-                      size: 14,
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      '8.4%',
-                      style: TextStyle(
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0x2234D399),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.trending_down_rounded,
                         color: Color(0xFF6EE7B7),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
+                        size: 14,
                       ),
-                    ),
-                  ],
+                      SizedBox(width: 4),
+                      Text(
+                        '8.4%',
+                        style: TextStyle(
+                          color: Color(0xFF6EE7B7),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Rs. 45,000.00',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
+              ],
             ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              const Text(
-                'Monthly budget',
-                style: TextStyle(color: Color(0xFFB4C0D4), fontSize: 12),
+            const SizedBox(height: 8),
+            const Text(
+              'Rs. 45,000.00',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
               ),
-              const Spacer(),
-              const Text(
-                'Rs. 75,000',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                const Text(
+                  'Monthly budget',
+                  style: TextStyle(color: Color(0xFFB4C0D4), fontSize: 12),
                 ),
+                const Spacer(),
+                const Text(
+                  'Rs. 75,000',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 9),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: const LinearProgressIndicator(
+                value: .6,
+                minHeight: 8,
+                backgroundColor: Color(0x335B6B87),
+                valueColor: AlwaysStoppedAnimation(emerald),
               ),
-            ],
-          ),
-          const SizedBox(height: 9),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: const LinearProgressIndicator(
-              value: .6,
-              minHeight: 8,
-              backgroundColor: Color(0x335B6B87),
-              valueColor: AlwaysStoppedAnimation(emerald),
             ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Rs. 30,000.00 remaining',
-            style: TextStyle(
-              color: Color(0xFF9FE8C8),
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+            const SizedBox(height: 8),
+            const Text(
+              'Rs. 30,000.00 remaining',
+              style: TextStyle(
+                color: Color(0xFF9FE8C8),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
