@@ -113,7 +113,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     final store = FinoraScope.of(context);
     final result = await showDialog<AppCategory>(
       context: context,
-      builder: (_) => _CategoryEditorDialog(category: category),
+      builder: (_) => CategoryEditorDialog(category: category),
     );
     if (result == null) return;
     if (!context.mounted) return;
@@ -263,16 +263,16 @@ class _CategoryCard extends StatelessWidget {
   }
 }
 
-class _CategoryEditorDialog extends StatefulWidget {
-  const _CategoryEditorDialog({this.category});
+class CategoryEditorDialog extends StatefulWidget {
+  const CategoryEditorDialog({super.key, this.category});
 
   final AppCategory? category;
 
   @override
-  State<_CategoryEditorDialog> createState() => _CategoryEditorDialogState();
+  State<CategoryEditorDialog> createState() => _CategoryEditorDialogState();
 }
 
-class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
+class _CategoryEditorDialogState extends State<CategoryEditorDialog> {
   late final TextEditingController _nameController;
   late IconData _icon;
   late Color _color;

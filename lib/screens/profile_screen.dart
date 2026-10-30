@@ -41,10 +41,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  bool _expenseAlerts = true;
-  bool _budgetAlerts = true;
-  bool _monthlySummary = false;
-
   void _open(Widget page) =>
       Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
 
@@ -277,41 +273,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _notifications() => _sheet(
-    'Notification Preferences',
-    StatefulBuilder(
-      builder: (context, update) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'Choose what you see in Finora. Preferences apply to this session.',
-            style: TextStyle(color: _subtle),
-          ),
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Expense reminders'),
-            value: _expenseAlerts,
-            onChanged: (value) => update(() => _expenseAlerts = value),
-            activeTrackColor: emerald,
-          ),
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Budget alerts'),
-            value: _budgetAlerts,
-            onChanged: (value) => update(() => _budgetAlerts = value),
-            activeTrackColor: emerald,
-          ),
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Monthly summary'),
-            value: _monthlySummary,
-            onChanged: (value) => update(() => _monthlySummary = value),
-            activeTrackColor: emerald,
-          ),
-        ],
+  void _notifications() {
+    final store = FinoraScope.of(context);
+    _sheet(
+      'Notification Preferences',
+      StatefulBuilder(
+        builder: (context, update) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Choose what you see in Finora. Preferences are saved on this device.',
+              style: TextStyle(color: _subtle),
+            ),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Expense reminders'),
+              value: store.expenseAlerts,
+              onChanged: (value) =>
+                  update(() => store.setAlert('expense', value)),
+              activeTrackColor: emerald,
+            ),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Budget alerts'),
+              value: store.budgetAlerts,
+              onChanged: (value) =>
+                  update(() => store.setAlert('budget', value)),
+              activeTrackColor: emerald,
+            ),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Monthly summary'),
+              value: store.monthlySummary,
+              onChanged: (value) =>
+                  update(() => store.setAlert('summary', value)),
+              activeTrackColor: emerald,
+            ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -90,112 +90,42 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets(
-    'Clear data and Logout require confirmation; security opens a screen',
-    (tester) async {
-      await phone(tester);
-      final preferences = SettingsPreferences();
-      addTearDown(preferences.dispose);
-      var cleared = false;
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: FinoraTheme.theme,
-          home: SettingsScreen(
-            preferences: preferences,
-            expenses: sampleExpenses,
-            onBack: () {},
-            onClearData: () => cleared = true,
-            onRestore: (_) {},
-          ),
-        ),
-      );
-      await reveal(tester, 'Change Password');
-      await tester.tap(find.text('Change Password'));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('authentication service'), findsOneWidget);
-      await tester.pageBack();
-      await tester.pumpAndSettle();
-      await reveal(tester, 'Clear App Data');
-      await tester.tap(find.text('Clear App Data'));
-      await tester.pumpAndSettle();
-      expect(cleared, isFalse);
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
-      expect(cleared, isFalse);
-      await tester.tap(find.text('Clear App Data'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Clear Data'));
-      await tester.pumpAndSettle();
-      expect(cleared, isTrue);
-      await reveal(tester, 'Logout');
-      await tester.tap(find.text('Logout'));
-      await tester.pumpAndSettle();
-      expect(find.text('Log out of Finora?'), findsOneWidget);
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
-      expect(find.text('Log out of Finora?'), findsNothing);
-      expect(tester.takeException(), isNull);
-    },
-  );
-
-  testWidgets('CSV export uses transactions and session backup restores them', (
+  testWidgets('Security and Data Management are gone; Logout asks first', (
     tester,
   ) async {
     await phone(tester);
     final preferences = SettingsPreferences();
     addTearDown(preferences.dispose);
-    final items = List<ExpenseItem>.of(sampleExpenses);
-    String? copied;
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      SystemChannels.platform,
-      (call) async {
-        if (call.method == 'Clipboard.setData') {
-          copied = (call.arguments as Map)['text'] as String;
-        }
-        return null;
-      },
-    );
-    addTearDown(
-      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        SystemChannels.platform,
-        null,
-      ),
-    );
     await tester.pumpWidget(
       MaterialApp(
         theme: FinoraTheme.theme,
         home: SettingsScreen(
           preferences: preferences,
-          expenses: items,
+          expenses: sampleExpenses,
           onBack: () {},
-          onClearData: items.clear,
-          onRestore: (restored) {
-            items.clear();
-            items.addAll(restored);
-          },
         ),
       ),
     );
-    await reveal(tester, 'Export Expense Data');
-    await tester.tap(find.text('Export Expense Data'));
+    await reveal(tester, 'Logout');
+    for (final removed in [
+      'Security',
+      'Change Password',
+      'Enable Biometric Authentication',
+      'App Lock',
+      'Privacy Settings',
+      'Data Management',
+      'Export Expense Data',
+      'Backup & Restore',
+      'Clear App Data',
+    ]) {
+      expect(find.text(removed), findsNothing, reason: removed);
+    }
+    await tester.tap(find.text('Logout'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Copy CSV'));
+    expect(find.text('Log out of Finora?'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
-    expect(copied, startsWith('Title,Category,Amount,Date,Notes\r\n'));
-    expect(copied, contains('"Rs. 1,250.00"'));
-    await reveal(tester, 'Backup & Restore');
-    await tester.tap(find.text('Backup & Restore'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Create session backup'));
-    await tester.pumpAndSettle();
-    expect(preferences.backup?.length, sampleExpenses.length);
-    items.clear();
-    await tester.tap(find.text('Restore session backup'));
-    await tester.pumpAndSettle();
-    expect(items, isEmpty);
-    await tester.tap(find.text('Restore'));
-    await tester.pumpAndSettle();
-    expect(items.length, sampleExpenses.length);
+    expect(find.text('Log out of Finora?'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

@@ -1,4 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'data/finora_database.dart';
 
 import 'screens/add_expense_screen.dart';
 import 'screens/budget_overview_screen.dart';
@@ -11,23 +15,55 @@ import 'screens/settings_preferences.dart';
 import 'screens/settings_screen.dart';
 import 'screens/welcome_screen.dart';
 
-void main() {
-  runApp(const MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+
+  // User data lives in SQLite on phones. Other platforms (desktop, web) run
+  // without saving until a database is configured for them.
+  FinoraDatabase? database;
+  if (!kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS)) {
+    try {
+      database = await FinoraDatabase.open();
+    } catch (error) {
+      debugPrint('Finora: could not open the database ($error)');
+    }
+  }
+
+  final store = FinoraStore(database: database, prefs: prefs, onboarded: false);
+  await store.load();
+  final settings = SettingsPreferences();
+  if (database != null) {
+    settings.attach(database, await database.loadSettings());
+  }
+  runApp(MyApp(store: store, settings: settings));
 }
 
 class MyApp extends StatefulWidget {
   /// [showOnboarding] false opens straight into the app (used by tests).
-  const MyApp({super.key, this.showOnboarding = true});
+  const MyApp({
+    super.key,
+    this.showOnboarding = true,
+    this.store,
+    this.settings,
+  });
 
   final bool showOnboarding;
+
+  /// Pre-loaded app state; created here when omitted (used by tests).
+  final FinoraStore? store;
+  final SettingsPreferences? settings;
 
   @override
   State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  final _settings = SettingsPreferences();
-  late final _store = FinoraStore(onboarded: !widget.showOnboarding);
+  late final _settings = widget.settings ?? SettingsPreferences();
+  late final _store =
+      widget.store ?? FinoraStore(onboarded: !widget.showOnboarding);
 
   @override
   void dispose() {
@@ -112,8 +148,6 @@ class _HomePageState extends State<HomePage> {
         preferences: widget.settings,
         expenses: expenses,
         onBack: () => setState(() => _selectedIndex = 0),
-        onClearData: () => store.replaceAllExpenses(const []),
-        onRestore: store.replaceAllExpenses,
       ),
     ];
 

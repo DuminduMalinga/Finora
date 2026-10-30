@@ -92,9 +92,6 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
       ? 'All time'
       : '${_monthNames[_month!.month - 1]} ${_month!.year}';
 
-  /// Tells the shared store that [widget.expenses] changed underneath it.
-  void _notifyStore() => FinoraScope.maybeOf(context)?.touch();
-
   @override
   Widget build(BuildContext context) {
     final expenses = _filteredExpenses;
@@ -193,16 +190,27 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
                     builder: (_) => ExpenseDetailsScreen(
                       expense: expense,
                       onUpdated: (updated) {
+                        final original = expense;
                         setState(() {
-                          final index = widget.expenses.indexOf(expense);
-                          if (index >= 0) widget.expenses[index] = updated;
+                          final store = FinoraScope.maybeOf(context);
+                          if (store != null) {
+                            store.replaceExpense(original, updated);
+                          } else {
+                            final index = widget.expenses.indexOf(original);
+                            if (index >= 0) widget.expenses[index] = updated;
+                          }
                           expense = updated;
                         });
-                        _notifyStore();
                       },
                       onDeleted: () {
-                        setState(() => widget.expenses.remove(expense));
-                        _notifyStore();
+                        setState(() {
+                          final store = FinoraScope.maybeOf(context);
+                          if (store != null) {
+                            store.removeExpense(expense);
+                          } else {
+                            widget.expenses.remove(expense);
+                          }
+                        });
                       },
                     ),
                   ),

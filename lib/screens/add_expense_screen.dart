@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'categories_screen.dart';
 import 'expense_model.dart';
 import 'finora_store.dart';
 import 'finora_theme.dart';
@@ -298,6 +299,23 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
 
+  /// Lets the user create a category without leaving the form.
+  Future<void> _addCategory() async {
+    final store = FinoraScope.maybeOf(context);
+    if (store == null) return;
+    final created = await showDialog<AppCategory>(
+      context: context,
+      builder: (_) => const CategoryEditorDialog(),
+    );
+    if (created == null || !mounted) return;
+    if (store.categories.any((c) => sameCategory(c.name, created.name))) {
+      showMessage(context, '${created.name} already exists');
+      return;
+    }
+    store.addCategory(created);
+    setState(() => _category = created);
+  }
+
   Widget _categoryGrid() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,6 +336,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 selected: _category == c,
                 onTap: () => setState(() => _category = c),
               ),
+            if (FinoraScope.maybeOf(context) != null)
+              _AddCategoryTile(onTap: _addCategory),
           ],
         ),
         if (_submitted && _category == null)
@@ -361,6 +381,41 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               ),
             ),
             const Icon(Icons.keyboard_arrow_down_rounded, color: _muted),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AddCategoryTile extends StatelessWidget {
+  const _AddCategoryTile({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: paleBlue,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add_circle_outline_rounded, color: navy, size: 26),
+            SizedBox(height: 6),
+            Text(
+              'Add',
+              style: TextStyle(
+                color: navy,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ],
         ),
       ),

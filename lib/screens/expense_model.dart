@@ -4,6 +4,7 @@ import 'finora_theme.dart';
 
 class ExpenseItem {
   const ExpenseItem({
+    this.id,
     required this.title,
     required this.category,
     required this.amount,
@@ -15,6 +16,7 @@ class ExpenseItem {
   });
 
   ExpenseItem copyWith({
+    int? id,
     String? title,
     String? category,
     String? amount,
@@ -24,6 +26,7 @@ class ExpenseItem {
     Color? background,
     String? notes,
   }) => ExpenseItem(
+    id: id ?? this.id,
     title: title ?? this.title,
     category: category ?? this.category,
     amount: amount ?? this.amount,
@@ -33,6 +36,9 @@ class ExpenseItem {
     background: background ?? this.background,
     notes: notes ?? this.notes,
   );
+
+  /// Database key; assigned by the store when the expense is saved.
+  final int? id;
   final String title;
   final String category;
   final String amount;
@@ -41,6 +47,16 @@ class ExpenseItem {
   final Color iconColor;
   final Color background;
   final String notes;
+
+  /// Saved expenses are the same expense when their ids match, so a stale
+  /// reference (for example after an edit) still finds its row.
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExpenseItem && id != null && other.id == id);
+
+  @override
+  int get hashCode => id?.hashCode ?? identityHashCode(this);
 }
 
 /// Fixture data for tests; the app itself starts with no transactions.

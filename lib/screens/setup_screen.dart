@@ -82,6 +82,7 @@ class SetupScreen extends StatefulWidget {
 class _SetupScreenState extends State<SetupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _budget = TextEditingController();
+  final _savings = TextEditingController();
   // The categories we suggest first; "Other" reveals more, and the user can
   // add their own. Every list below ends up in [_options].
   final _main = defaultCategories.where((c) => c.name != 'Other').toList();
@@ -95,6 +96,7 @@ class _SetupScreenState extends State<SetupScreen> {
   @override
   void dispose() {
     _budget.dispose();
+    _savings.dispose();
     for (final controller in _limits.values) {
       controller.dispose();
     }
@@ -150,6 +152,7 @@ class _SetupScreenState extends State<SetupScreen> {
     }
     FinoraScope.of(context).completeSetup(
       budget: budget,
+      savingsGoal: _parse(_savings.text),
       categories: _chosen,
       limits: {for (final c in _chosen) c.name: _parse(_limits[c.name]!.text)!},
     );
@@ -233,8 +236,8 @@ class _SetupScreenState extends State<SetupScreen> {
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
             children: [
               _heading(
-                '1. Monthly budget',
-                'The most you plan to spend this month.',
+                '1. Budget and savings goal',
+                'The most you plan to spend this month, and what you want to save.',
               ),
               TextFormField(
                 controller: _budget,
@@ -247,6 +250,24 @@ class _SetupScreenState extends State<SetupScreen> {
                   final amount = _parse(value);
                   return amount == null || !amount.isFinite || amount <= 0
                       ? 'Enter a budget greater than 0'
+                      : null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _savings,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: _decoration(
+                  'Savings goal (optional)',
+                  hint: '10000',
+                ),
+                validator: (value) {
+                  if ((value ?? '').trim().isEmpty) return null;
+                  final amount = _parse(value);
+                  return amount == null || !amount.isFinite || amount <= 0
+                      ? 'Enter a goal greater than 0'
                       : null;
                 },
               ),

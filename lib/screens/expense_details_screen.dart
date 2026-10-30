@@ -278,7 +278,7 @@ class _EditExpenseScreenState extends State<_EditExpenseScreen> {
     if (!_formKey.currentState!.validate()) return;
     Navigator.pop(
       context,
-      ExpenseItem(
+      widget.expense.copyWith(
         title: _titleController.text.trim(),
         category: _category,
         amount: 'LKR ${_formattedAmount(_amountController.text.trim())}',

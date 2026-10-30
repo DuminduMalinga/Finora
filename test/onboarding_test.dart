@@ -34,6 +34,7 @@ void main() {
   ) async {
     await openSetup(tester);
     await tester.enterText(find.byType(TextFormField).first, '50000');
+    await tester.enterText(find.byType(TextFormField).at(1), '200000');
     await tester.tap(find.text('Food'));
     await tester.tap(find.text('Transport'));
     await tester.pumpAndSettle();
@@ -59,11 +60,11 @@ void main() {
     await tester.pumpAndSettle();
 
     final fields = find.byType(TextFormField);
-    expect(fields, findsNWidgets(5)); // budget + four limits
-    await tester.enterText(fields.at(1), '20000');
-    await tester.enterText(fields.at(2), '10000');
-    await tester.enterText(fields.at(3), '3000');
-    await tester.enterText(fields.at(4), '2000');
+    expect(fields, findsNWidgets(6)); // budget, savings goal, four limits
+    await tester.enterText(fields.at(2), '20000');
+    await tester.enterText(fields.at(3), '10000');
+    await tester.enterText(fields.at(4), '3000');
+    await tester.enterText(fields.at(5), '2000');
     await tester.pumpAndSettle();
     expect(find.text('Allocated LKR 35,000 of LKR 50,000'), findsOneWidget);
     expect(find.text('LKR 15,000 left'), findsOneWidget);
@@ -74,6 +75,13 @@ void main() {
     // Home is configured with the entered budget.
     expect(find.text('Set up your budget'), findsNothing);
     expect(find.text('Rs. 50,000'), findsOneWidget);
+
+    // The savings goal entered during setup is on the profile.
+    await tester.tap(find.byTooltip('Open profile'));
+    await tester.pumpAndSettle();
+    expect(find.text('LKR 200,000'), findsOneWidget);
+    await tester.tap(find.byTooltip('Back to dashboard'));
+    await tester.pumpAndSettle();
 
     // Budgets show the chosen categories with their limits.
     await tester.tap(find.text('Budgets'));
@@ -105,7 +113,7 @@ void main() {
 
     await tester.tap(find.text('Food'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextFormField).at(1), '20000');
+    await tester.enterText(find.byType(TextFormField).at(2), '20000');
     await tester.ensureVisible(find.text('Finish setup'));
     await tester.tap(find.text('Finish setup'));
     await tester.pumpAndSettle();
@@ -114,6 +122,22 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Set up your budget'), findsOneWidget);
+  });
+
+  testWidgets('an empty savings goal keeps the LKR 10,000 default', (
+    tester,
+  ) async {
+    await openSetup(tester);
+    await tester.enterText(find.byType(TextFormField).first, '50000');
+    await tester.tap(find.text('Food'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(2), '20000');
+    await tester.ensureVisible(find.text('Finish setup'));
+    await tester.tap(find.text('Finish setup'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Open profile'));
+    await tester.pumpAndSettle();
+    expect(find.text('LKR 10,000'), findsOneWidget);
   });
 
   testWidgets('Skip for now opens the app with the default categories', (

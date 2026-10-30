@@ -77,4 +77,38 @@ void main() {
     expect(store.initials, 'SR');
     expect(store.monthlyBudget, 10000);
   });
+
+  testWidgets('a category can be created from the Add Expense screen', (
+    tester,
+  ) async {
+    phone(tester);
+    await tester.pumpWidget(const MyApp(showOnboarding: false));
+    await tester.tap(find.text('Add expense'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      ),
+      'Gym',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Add category'));
+    await tester.pumpAndSettle();
+    expect(find.text('Gym'), findsOneWidget); // new tile, already selected
+
+    await tester.enterText(find.byType(TextFormField).at(0), '1500');
+    await tester.enterText(find.byType(TextFormField).at(1), 'Monthly pass');
+    await tester.ensureVisible(find.text('Save Expense'));
+    await tester.tap(find.text('Save Expense'));
+    await tester.pumpAndSettle();
+    expect(find.text('Monthly pass'), findsOneWidget);
+
+    await tester.tap(find.text('Categories'));
+    await tester.pumpAndSettle();
+    expect(find.text('Gym'), findsOneWidget);
+    expect(find.text('LKR 1500.00 this month'), findsOneWidget);
+  });
 }

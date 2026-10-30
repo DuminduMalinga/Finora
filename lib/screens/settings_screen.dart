@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'expense_model.dart';
 import 'finora_theme.dart';
@@ -12,14 +11,10 @@ class SettingsScreen extends StatelessWidget {
     required this.preferences,
     required this.expenses,
     required this.onBack,
-    required this.onClearData,
-    required this.onRestore,
   });
   final SettingsPreferences preferences;
   final List<ExpenseItem> expenses;
   final VoidCallback onBack;
-  final VoidCallback onClearData;
-  final ValueChanged<List<ExpenseItem>> onRestore;
 
   Future<void> _choose(
     BuildContext context,
@@ -93,123 +88,6 @@ class SettingsScreen extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => _SettingsDetailPage(title: title, message: message),
-      ),
-    );
-  }
-
-  void _export(BuildContext context) {
-    String quote(String value) => '"${value.replaceAll('"', '""')}"';
-    final csv = [
-      'Title,Category,Amount,Date,Notes',
-      ...expenses.map(
-        (e) => [
-          e.title,
-          e.category,
-          e.amount,
-          e.date,
-          e.notes,
-        ].map(quote).join(','),
-      ),
-    ].join('\r\n');
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      useSafeArea: true,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Export Expense Data',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 12),
-            Text('${expenses.length} transactions • CSV format'),
-            const SizedBox(height: 8),
-            const Text(
-              'Copy your expense data to paste into a spreadsheet or save as a CSV file.',
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              icon: const Icon(Icons.copy_outlined),
-              label: const Text('Copy CSV'),
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: csv));
-                if (!context.mounted) return;
-                Navigator.pop(context);
-                showMessage(context, 'Expense CSV copied to clipboard');
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _backup(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => ListenableBuilder(
-          listenable: preferences,
-          builder: (context, _) => Scaffold(
-            appBar: AppBar(title: const Text('Backup & Restore')),
-            body: ListView(
-              padding: const EdgeInsets.all(24),
-              children: [
-                Icon(
-                  Icons.cloud_done_outlined,
-                  color: preferences.accent,
-                  size: 52,
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'A little peace of mind',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Create a temporary snapshot of your expenses. This preview stores it only until the app closes; it is not a cloud backup.',
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: () {
-                    preferences.update(
-                      () => preferences.backup = List.of(expenses),
-                    );
-                    showMessage(context, 'Session backup created');
-                  },
-                  child: const Text('Create session backup'),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: preferences.backup == null
-                      ? null
-                      : () async {
-                          final confirmed = await _confirm(
-                            context,
-                            title: 'Restore backup?',
-                            message:
-                                'Replace your current expenses with the saved session snapshot?',
-                            action: 'Restore',
-                          );
-                          if (!confirmed || !context.mounted) return;
-                          onRestore(List.of(preferences.backup!));
-                          showMessage(context, 'Expenses restored');
-                        },
-                  child: const Text('Restore session backup'),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  preferences.backup == null
-                      ? 'No session backup yet.'
-                      : '${preferences.backup!.length} expenses in your session backup.',
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -533,82 +411,6 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const _SectionHeading('Security', Icons.shield_outlined),
-              _SettingsCard(
-                children: [
-                  _SettingRow(
-                    icon: Icons.lock_outline_rounded,
-                    title: 'Change Password',
-                    onTap: () => _info(
-                      context,
-                      'Change Password',
-                      'Password changes are available with a signed-in account. This local preview is not connected to an authentication service.',
-                    ),
-                  ),
-                  _SettingRow(
-                    icon: Icons.fingerprint_rounded,
-                    title: 'Enable Biometric Authentication',
-                    onTap: () => _info(
-                      context,
-                      'Biometric Authentication',
-                      'Use your device’s fingerprint or face recognition to unlock Finora. Device authentication is not enabled in this preview.',
-                    ),
-                  ),
-                  _SettingRow(
-                    icon: Icons.phonelink_lock_outlined,
-                    title: 'App Lock',
-                    value: 'Off',
-                    onTap: () => _info(
-                      context,
-                      'App Lock',
-                      'An app lock can protect your financial information when you leave Finora. PIN and biometric enrollment are not configured in this preview, so the app is currently unlocked.',
-                    ),
-                  ),
-                  _SettingRow(
-                    icon: Icons.verified_user_outlined,
-                    title: 'Privacy Settings',
-                    onTap: () => _info(
-                      context,
-                      'Privacy Settings',
-                      'Your profile and settings changes stay in this app session. No analytics, bank connection, or cloud account is configured. Avoid entering sensitive information into this preview.',
-                    ),
-                  ),
-                ],
-              ),
-              const _SectionHeading('Data Management', Icons.storage_outlined),
-              _SettingsCard(
-                children: [
-                  _SettingRow(
-                    icon: Icons.file_download_outlined,
-                    title: 'Export Expense Data',
-                    onTap: () => _export(context),
-                  ),
-                  _SettingRow(
-                    icon: Icons.cloud_sync_outlined,
-                    title: 'Backup & Restore',
-                    onTap: () => _backup(context),
-                  ),
-                  _SettingRow(
-                    icon: Icons.delete_outline_rounded,
-                    title: 'Clear App Data',
-                    destructive: true,
-                    onTap: () async {
-                      if (!await _confirm(
-                            context,
-                            title: 'Clear app data?',
-                            message:
-                                'This removes all expense transactions from this app session. Export your expenses or create a session backup first. This cannot be undone without a backup.',
-                            action: 'Clear Data',
-                          ) ||
-                          !context.mounted) {
-                        return;
-                      }
-                      onClearData();
-                      showMessage(context, 'Expense data cleared');
-                    },
-                  ),
-                ],
-              ),
               const _SectionHeading('About', Icons.info_outline_rounded),
               _SettingsCard(
                 children: [
@@ -821,18 +623,16 @@ class _SettingRow extends StatelessWidget {
     this.value,
     this.subtitle,
     this.onTap,
-    this.destructive = false,
   });
   final IconData icon;
   final String title;
   final String? value;
   final String? subtitle;
   final VoidCallback? onTap;
-  final bool destructive;
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    final foreground = destructive ? coral : colors.onSurface;
+    final foreground = colors.onSurface;
     return ListTile(
       onTap: onTap,
       minTileHeight: 62,
