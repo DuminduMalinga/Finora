@@ -6,6 +6,7 @@ import 'expense_details_screen.dart';
 import 'budget_overview_screen.dart';
 import 'finora_theme.dart';
 import 'monthly_reports_screen.dart';
+import 'profile_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({
@@ -26,6 +27,11 @@ class DashboardScreen extends StatelessWidget {
           sliver: SliverList(
             delegate: SliverChildListDelegate([
               _HomeHeader(
+                onProfile: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => ProfileScreen(expenses: expenses),
+                  ),
+                ),
                 onNotifications: () =>
                     showMessage(context, 'You are all caught up'),
               ),
@@ -98,17 +104,20 @@ class DashboardScreen extends StatelessWidget {
 }
 
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({required this.onNotifications});
+  const _HomeHeader({required this.onNotifications, required this.onProfile});
 
   final VoidCallback onNotifications;
+  final VoidCallback onProfile;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        GestureDetector(
-          onTap: () => showMessage(context, 'Settings coming soon'),
-          child: const CircleAvatar(
+        IconButton(
+          tooltip: 'Open profile',
+          onPressed: onProfile,
+          padding: EdgeInsets.zero,
+          icon: const CircleAvatar(
             radius: 23,
             backgroundColor: Color(0xFFDCEBFF),
             child: Text(

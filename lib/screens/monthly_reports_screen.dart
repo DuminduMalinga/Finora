@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'expense_model.dart';
+import 'expense_history_screen.dart';
 import 'finora_theme.dart';
 
 const _months = [
@@ -215,6 +216,17 @@ class _MonthlyReportsScreenState extends State<MonthlyReportsScreen> {
         title: const Text('Monthly Reports'),
         backgroundColor: canvas,
         foregroundColor: navy,
+        actions: [
+          TextButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => ExpenseHistoryScreen(expenses: widget.expenses),
+              ),
+            ),
+            icon: const Icon(Icons.history_rounded, size: 18),
+            label: const Text('View History'),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),

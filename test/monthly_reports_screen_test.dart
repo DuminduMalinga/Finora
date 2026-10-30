@@ -106,10 +106,15 @@ void main() {
     },
   );
 
-  testWidgets('Reports is available in the main navigation', (tester) async {
+  testWidgets('Reports tab opens monthly reports and transaction history', (
+    tester,
+  ) async {
     await tester.pumpWidget(const MyApp());
     await tester.tap(find.text('Reports'));
     await tester.pumpAndSettle();
     expect(find.text('Monthly Reports'), findsOneWidget);
+    await tester.tap(find.text('View History'));
+    await tester.pumpAndSettle();
+    expect(find.text('Expense History'), findsOneWidget);
   });
 }
