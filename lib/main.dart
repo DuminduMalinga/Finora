@@ -4,31 +4,63 @@ import 'screens/add_expense_screen.dart';
 import 'screens/budget_overview_screen.dart';
 import 'screens/categories_screen.dart';
 import 'screens/dashboard_screen.dart';
-import 'screens/expense_history_screen.dart';
 import 'screens/expense_model.dart';
 import 'screens/finora_theme.dart';
 import 'screens/monthly_reports_screen.dart';
+import 'screens/settings_preferences.dart';
+import 'screens/settings_screen.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  final _settings = SettingsPreferences();
+
+  @override
+  void dispose() {
+    _settings.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Finora',
-      debugShowCheckedModeBanner: false,
-      theme: FinoraTheme.theme,
-      home: const HomePage(),
+    return ListenableBuilder(
+      listenable: _settings,
+      builder: (context, _) => MaterialApp(
+        title: 'Spendly',
+        debugShowCheckedModeBanner: false,
+        theme: FinoraTheme.theme.copyWith(
+          colorScheme: FinoraTheme.theme.colorScheme.copyWith(
+            secondary: _settings.accent,
+          ),
+        ),
+        darkTheme: ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.dark,
+          fontFamily: 'Inter',
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: navy,
+            brightness: Brightness.dark,
+          ).copyWith(secondary: _settings.accent),
+        ),
+        themeMode: _settings.themeMode,
+        home: HomePage(settings: _settings),
+      ),
     );
   }
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({super.key, required this.settings});
+  final SettingsPreferences settings;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -52,7 +84,16 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final pages = [
       DashboardScreen(expenses: _expenses, onAddExpense: _openAddExpense),
-      ExpenseHistoryScreen(expenses: _expenses),
+      SettingsScreen(
+        preferences: widget.settings,
+        expenses: _expenses,
+        onBack: () => setState(() => _selectedIndex = 0),
+        onClearData: () => setState(() => _expenses.clear()),
+        onRestore: (items) => setState(() {
+          _expenses.clear();
+          _expenses.addAll(items);
+        }),
+      ),
       const BudgetOverviewScreen(),
       CategoriesScreen(expenses: _expenses),
       MonthlyReportsScreen(expenses: _expenses),
@@ -60,24 +101,30 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       body: SafeArea(child: pages[_selectedIndex]),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddExpense,
-        backgroundColor: navy,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text(
-          'Add expense',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
-      ),
+      floatingActionButton: _selectedIndex == 4 || _selectedIndex == 1
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _openAddExpense,
+              backgroundColor: navy,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text(
+                'Add expense',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
           setState(() => _selectedIndex = index);
         },
-        backgroundColor: Colors.white,
-        indicatorColor: paleBlue,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        indicatorColor: Theme.of(context).brightness == Brightness.dark
+            ? widget.settings.accent.withValues(alpha: 0.25)
+            : _selectedIndex == 4 || _selectedIndex == 1
+            ? const Color(0xFFECFDF5)
+            : paleBlue,
         height: 72,
         destinations: const [
           NavigationDestination(
@@ -86,9 +133,9 @@ class _HomePageState extends State<HomePage> {
             label: 'Home',
           ),
           NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long_rounded),
-            label: 'History',
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings_rounded),
+            label: 'Settings',
           ),
           NavigationDestination(
             icon: Icon(Icons.account_balance_wallet_outlined),

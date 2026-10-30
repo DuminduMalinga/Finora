@@ -74,58 +74,82 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 110),
-      children: [
-        Row(
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 110),
           children: [
-            const Expanded(
-              child: Text(
-                'Categories',
-                style: TextStyle(
-                  color: navy,
-                  fontSize: 25,
-                  fontWeight: FontWeight.w800,
+            Row(
+              children: [
+                if (Navigator.of(context).canPop()) ...[
+                  IconButton(
+                    tooltip: 'Back',
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.arrow_back_rounded),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: Text(
+                    'Categories',
+                    style: TextStyle(
+                      color: dark ? theme.colorScheme.onSurface : navy,
+                      fontSize: 25,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
+                FilledButton.icon(
+                  onPressed: () => _openCategoryEditor(context),
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text('Add'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: navy,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 5),
+            Text(
+              'Manage how you organize your spending.',
+              style: TextStyle(
+                color: dark
+                    ? theme.colorScheme.onSurfaceVariant
+                    : const Color(0xFF64748B),
+                fontSize: 13,
+                height: 1.5,
+                decoration: TextDecoration.none,
               ),
             ),
-            FilledButton.icon(
-              onPressed: () => _openCategoryEditor(context),
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Add'),
-              style: FilledButton.styleFrom(
-                backgroundColor: navy,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
+            const SizedBox(height: 22),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _categories.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1.15,
               ),
+              itemBuilder: (context, index) {
+                final category = _categories[index];
+                return _CategoryCard(
+                  category: category,
+                  onEdit: () =>
+                      _openCategoryEditor(context, category: category),
+                  onDelete: () => _confirmDelete(context, category),
+                );
+              },
             ),
           ],
         ),
-        const SizedBox(height: 5),
-        const Text(
-          'Manage how you organize your spending.',
-          style: TextStyle(color: Color(0xFF64748B)),
-        ),
-        const SizedBox(height: 22),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _categories.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.15,
-          ),
-          itemBuilder: (context, index) {
-            final category = _categories[index];
-            return _CategoryCard(
-              category: category,
-              onEdit: () => _openCategoryEditor(context, category: category),
-              onDelete: () => _confirmDelete(context, category),
-            );
-          },
-        ),
-      ],
+      ),
     );
   }
 
@@ -210,9 +234,11 @@ class _CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: dark ? theme.colorScheme.surfaceContainer : Colors.white,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
@@ -257,8 +283,8 @@ class _CategoryCard extends StatelessWidget {
               category.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: navy,
+              style: TextStyle(
+                color: dark ? theme.colorScheme.onSurface : navy,
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
               ),
@@ -266,8 +292,10 @@ class _CategoryCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               'LKR ${category.total.toStringAsFixed(2)} spent',
-              style: const TextStyle(
-                color: Color(0xFF64748B),
+              style: TextStyle(
+                color: dark
+                    ? theme.colorScheme.onSurfaceVariant
+                    : const Color(0xFF64748B),
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
               ),
