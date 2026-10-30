@@ -19,7 +19,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const MyApp(showOnboarding: false));
     await tester.tap(find.byTooltip('Open profile'));
     await tester.pumpAndSettle();
   }

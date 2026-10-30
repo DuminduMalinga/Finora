@@ -266,7 +266,7 @@ class SettingsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                'Customize your Spendly experience.',
+                'Customize your Finora experience.',
                 style: TextStyle(color: muted, fontSize: 13),
               ),
               const _SectionHeading('Appearance', Icons.palette_outlined),
@@ -551,7 +551,7 @@ class SettingsScreen extends StatelessWidget {
                     onTap: () => _info(
                       context,
                       'Biometric Authentication',
-                      'Use your device’s fingerprint or face recognition to unlock Spendly. Device authentication is not enabled in this preview.',
+                      'Use your device’s fingerprint or face recognition to unlock Finora. Device authentication is not enabled in this preview.',
                     ),
                   ),
                   _SettingRow(
@@ -561,7 +561,7 @@ class SettingsScreen extends StatelessWidget {
                     onTap: () => _info(
                       context,
                       'App Lock',
-                      'An app lock can protect your financial information when you leave Spendly. PIN and biometric enrollment are not configured in this preview, so the app is currently unlocked.',
+                      'An app lock can protect your financial information when you leave Finora. PIN and biometric enrollment are not configured in this preview, so the app is currently unlocked.',
                     ),
                   ),
                   _SettingRow(
@@ -614,11 +614,11 @@ class SettingsScreen extends StatelessWidget {
                 children: [
                   _SettingRow(
                     icon: Icons.auto_awesome_outlined,
-                    title: 'About Spendly',
+                    title: 'About Finora',
                     onTap: () => _info(
                       context,
-                      'About Spendly',
-                      'A little clarity. A lot more control.\n\nSpendly helps you track expenses, plan budgets, and understand your monthly spending.',
+                      'About Finora',
+                      'A little clarity. A lot more control.\n\nFinora helps you track expenses, plan budgets, and understand your monthly spending.',
                     ),
                   ),
                   const _SettingRow(
@@ -641,7 +641,7 @@ class SettingsScreen extends StatelessWidget {
                     onTap: () => _info(
                       context,
                       'Terms & Conditions',
-                      'This is a local Spendly preview. Published terms for a production service are not available in this version.',
+                      'This is a local Finora preview. Published terms for a production service are not available in this version.',
                     ),
                   ),
                   _SettingRow(
@@ -660,7 +660,7 @@ class SettingsScreen extends StatelessWidget {
                 onPressed: () async {
                   if (!await _confirm(
                         context,
-                        title: 'Log out of Spendly?',
+                        title: 'Log out of Finora?',
                         message: 'Are you sure you want to log out?',
                         action: 'Logout',
                       ) ||
@@ -689,7 +689,7 @@ class SettingsScreen extends StatelessWidget {
                         context,
                         title: 'Delete account permanently?',
                         message:
-                            'Deleting a real Spendly account would permanently remove its profile and financial data. This action cannot be undone.',
+                            'Deleting a real Finora account would permanently remove its profile and financial data. This action cannot be undone.',
                         action: 'Delete Account',
                       ) ||
                       !context.mounted) {
@@ -709,7 +709,7 @@ class SettingsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Spendly 1.0.0 • Local preview\nPreferences apply to this session. Currency and language selections are previews; recorded amounts remain in LKR.',
+                'Finora 1.0.0 • Local preview\nPreferences apply to this session. Currency and language selections are previews; recorded amounts remain in LKR.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 10, color: muted, height: 1.6),
               ),

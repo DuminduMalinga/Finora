@@ -29,7 +29,7 @@ void main() {
     'Categories opened from Profile has a Material surface and normal typography',
     (tester) async {
       phone(tester);
-      await tester.pumpWidget(const MyApp());
+      await tester.pumpWidget(const MyApp(showOnboarding: false));
       await tester.tap(find.byTooltip('Open profile'));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(find.text('My Categories'), 200);

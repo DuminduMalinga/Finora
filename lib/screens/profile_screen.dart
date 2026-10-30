@@ -284,7 +284,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Text(
-            'Choose what you see in Spendly. Preferences apply to this session.',
+            'Choose what you see in Finora. Preferences apply to this session.',
             style: TextStyle(color: _subtle),
           ),
           SwitchListTile.adaptive(
@@ -603,7 +603,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 24),
             const Text(
-              'SPENDLY',
+              'FINORA',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: navy,

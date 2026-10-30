@@ -43,7 +43,7 @@ void main() {
     tester,
   ) async {
     await phone(tester);
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const MyApp(showOnboarding: false));
     final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
     expect(
       bar.destinations.whereType<NavigationDestination>().map((e) => e.label),
@@ -130,10 +130,10 @@ void main() {
       await reveal(tester, 'Logout');
       await tester.tap(find.text('Logout'));
       await tester.pumpAndSettle();
-      expect(find.text('Log out of Spendly?'), findsOneWidget);
+      expect(find.text('Log out of Finora?'), findsOneWidget);
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
-      expect(find.text('Log out of Spendly?'), findsNothing);
+      expect(find.text('Log out of Finora?'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );

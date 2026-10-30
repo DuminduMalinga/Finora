@@ -7,7 +7,7 @@ void main() {
   testWidgets('Dashboard opens Add Expense and validates input', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const MyApp(showOnboarding: false));
 
     expect(find.text('Good morning,'), findsOneWidget);
 
