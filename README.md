@@ -67,8 +67,7 @@ you when you get close to a budget.
 |:---:|:---:|:---:|
 | <img src="docs/screenshots/13_home_dark.png" width="230" alt="Home, dark" /> | <img src="docs/screenshots/14_budgets_dark.png" width="230" alt="Budgets, dark" /> | <img src="docs/screenshots/15_reports_dark.png" width="230" alt="Reports, dark" /> |
 
-> The screenshots use sample data and are rendered from the real screens. See
-> [Regenerating the screenshots](#regenerating-the-screenshots).
+> The screenshots use sample data and are rendered from the real screens.
 
 ## Built with
 
@@ -131,7 +130,6 @@ lib/
     monthly_reports_screen.dart  notifications_screen.dart
     profile_screen.dart  settings_screen.dart  settings_preferences.dart
 test/                            Unit, widget and golden-image tests
-tool/screenshots_test.dart       Generates docs/screenshots
 docs/screenshots/                Images used in this README
 ```
 
@@ -180,15 +178,6 @@ The tests cover:
 A few tests compare screens against golden images in `test/goldens`. If you
 change how a screen looks on purpose, update them with
 `flutter test --update-goldens`.
-
-### Regenerating the screenshots
-
-```bash
-flutter test tool/screenshots_test.dart --update-goldens
-```
-
-This renders the real screens with sample data into `docs/screenshots`. The
-data is relative to today's date, so the numbers shift slightly over time.
 
 ## Task checklist
 
