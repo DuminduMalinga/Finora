@@ -11,6 +11,8 @@ class ExpenseItem {
     required this.icon,
     required this.iconColor,
     required this.background,
+    this.paymentMethod = 'Visa •••• 4832',
+    this.notes = 'Personal expense',
   });
   final String title;
   final String category;
@@ -19,6 +21,8 @@ class ExpenseItem {
   final IconData icon;
   final Color iconColor;
   final Color background;
+  final String paymentMethod;
+  final String notes;
 }
 
 const sampleExpenses = [
