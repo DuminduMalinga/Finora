@@ -1,20 +1,32 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:finora/main.dart';
 
 void main() {
-  testWidgets('Finora dashboard renders and navigation works', (
+  testWidgets('Dashboard opens Add Expense and validates input', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const MyApp());
 
     expect(find.text('Good morning,'), findsOneWidget);
-    expect(find.text('Rs. 45,000.00'), findsOneWidget);
 
-    await tester.tap(find.text('History'));
+    await tester.tap(find.text('Add expense'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Expense history'), findsOneWidget);
-    expect(find.text('Search expenses'), findsOneWidget);
+    expect(find.text('Add Expense'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Save Expense'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Save Expense'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Enter an amount'), findsOneWidget);
+    expect(find.text('Enter a title'), findsOneWidget);
+    expect(find.text('Select a category'), findsOneWidget);
+    expect(find.text('Add Expense'), findsOneWidget);
   });
 }

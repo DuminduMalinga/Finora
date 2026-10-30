@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'finora_screens.dart';
+import 'expense_model.dart';
 import 'finora_theme.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -41,9 +41,7 @@ class DashboardScreen extends StatelessWidget {
               SectionHeader(
                 title: 'Where your money goes',
                 action: 'See all',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ReportsScreen()),
-                ),
+                onTap: () => showMessage(context, 'Reports coming soon'),
               ),
               const SizedBox(height: 12),
               const CategoryBreakdown(),
@@ -62,12 +60,7 @@ class DashboardScreen extends StatelessWidget {
                   .map(
                     (expense) => ExpenseTile(
                       expense: expense,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              ExpenseDetailsScreen(expense: expense),
-                        ),
-                      ),
+                      onTap: () => showMessage(context, expense.title),
                     ),
                   ),
             ]),
@@ -88,9 +81,7 @@ class _HomeHeader extends StatelessWidget {
     return Row(
       children: [
         GestureDetector(
-          onTap: () => Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
+          onTap: () => showMessage(context, 'Settings coming soon'),
           child: const CircleAvatar(
             radius: 23,
             backgroundColor: Color(0xFFDCEBFF),
