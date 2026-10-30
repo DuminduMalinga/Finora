@@ -4,12 +4,15 @@ import 'package:flutter/material.dart';
 
 import 'expense_model.dart';
 import 'expense_history_screen.dart';
+import 'expense_actions.dart';
 import 'expense_details_screen.dart';
 import 'budget_overview_screen.dart';
 import 'finora_store.dart';
 import 'finora_theme.dart';
 import 'monthly_reports_screen.dart';
+import 'notifications_screen.dart';
 import 'profile_screen.dart';
+import 'app_colors.dart';
 
 const _monthNames = [
   'January',
@@ -32,7 +35,7 @@ String _rs(double amount) {
     RegExp(r'\B(?=(\d{3})+(?!\d))'),
     (_) => ',',
   );
-  return 'Rs. $whole.${parts.last}';
+  return 'LKR $whole.${parts.last}';
 }
 
 /// Totals shown on Home, derived from the live expense list.
@@ -84,13 +87,6 @@ class DashboardStats {
   late final int todayIndex;
   late final String monthName;
 
-  /// Budget warning shown in notifications, or null when nothing needs attention.
-  String? get alert => remaining < 0
-      ? 'You are over your monthly budget'
-      : usedRatio >= .8
-      ? 'You have used ${(usedRatio * 100).round()}% of your monthly budget'
-      : null;
-
   double get weekTotal => week.fold(0, (a, b) => a + b);
   double get remaining => monthlyBudget - monthTotal;
   double get usedRatio => (monthTotal / monthlyBudget).clamp(0, 1);
@@ -128,7 +124,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final store = FinoraScope.of(context);
     final stats = DashboardStats(expenses, monthlyBudget: store.monthlyBudget);
-    final alert = stats.alert;
+    final alertCount = buildNotifications(
+      expenses: expenses,
+      monthlyBudget: store.monthlyBudget,
+      limits: store.categoryLimits,
+    ).length;
     return CustomScrollView(
       slivers: [
         SliverPadding(
@@ -139,14 +139,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 name: store.name,
                 initials: store.initials,
                 photo: store.photo,
-                hasAlert: alert != null,
+                alertCount: alertCount,
                 onProfile: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) => ProfileScreen(expenses: expenses),
                   ),
                 ),
-                onNotifications: () =>
-                    showMessage(context, alert ?? 'You are all caught up'),
+                onNotifications: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const NotificationsScreen(),
+                  ),
+                ),
               ),
               const SizedBox(height: 22),
               MonthSelector(
@@ -201,6 +204,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               const SizedBox(height: 4),
+              if (expenses.isEmpty) const _EmptyTransactions(),
               ...expenses
                   .take(3)
                   .map(
@@ -232,12 +236,46 @@ String _greeting(int hour) => hour < 12
     ? 'Good afternoon'
     : 'Good evening';
 
+class _EmptyTransactions extends StatelessWidget {
+  const _EmptyTransactions();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+    decoration: BoxDecoration(
+      color: context.surface,
+      borderRadius: BorderRadius.circular(18),
+    ),
+    child: Column(
+      children: [
+        Icon(Icons.receipt_long_outlined, color: context.ink, size: 34),
+        SizedBox(height: 10),
+        Text(
+          'No expenses yet',
+          style: TextStyle(
+            color: context.ink,
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          'Tap “Add expense” to record your first one.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: context.muted, fontSize: 12.5),
+        ),
+      ],
+    ),
+  );
+}
+
 class _HomeHeader extends StatelessWidget {
   const _HomeHeader({
     required this.name,
     required this.initials,
     required this.photo,
-    required this.hasAlert,
+    required this.alertCount,
     required this.onNotifications,
     required this.onProfile,
   });
@@ -245,7 +283,7 @@ class _HomeHeader extends StatelessWidget {
   final String name;
   final String initials;
   final Uint8List? photo;
-  final bool hasAlert;
+  final int alertCount;
 
   final VoidCallback onNotifications;
   final VoidCallback onProfile;
@@ -260,14 +298,14 @@ class _HomeHeader extends StatelessWidget {
           padding: EdgeInsets.zero,
           icon: CircleAvatar(
             radius: 23,
-            backgroundColor: const Color(0xFFDCEBFF),
+            backgroundColor: context.tint,
             backgroundImage: photo == null ? null : MemoryImage(photo!),
             child: photo != null
                 ? null
                 : Text(
                     initials,
-                    style: const TextStyle(
-                      color: navy,
+                    style: TextStyle(
+                      color: context.ink,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -280,15 +318,15 @@ class _HomeHeader extends StatelessWidget {
             children: [
               Text(
                 '${_greeting(DateTime.now().hour)},',
-                style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                style: TextStyle(color: context.muted, fontSize: 13),
               ),
               const SizedBox(height: 2),
               Text(
                 name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: navy,
+                style: TextStyle(
+                  color: context.ink,
                   fontSize: 19,
                   fontWeight: FontWeight.w800,
                 ),
@@ -297,13 +335,16 @@ class _HomeHeader extends StatelessWidget {
           ),
         ),
         IconButton(
+          tooltip: alertCount == 0
+              ? 'Notifications'
+              : 'Notifications ($alertCount)',
           onPressed: onNotifications,
-          style: IconButton.styleFrom(backgroundColor: Colors.white),
+          style: IconButton.styleFrom(backgroundColor: context.surface),
           icon: Badge(
-            isLabelVisible: hasAlert,
-            smallSize: 7,
+            isLabelVisible: alertCount > 0,
+            label: Text('$alertCount'),
             backgroundColor: coral,
-            child: const Icon(Icons.notifications_none_rounded, color: navy),
+            child: Icon(Icons.notifications_none_rounded, color: context.ink),
           ),
         ),
       ],
@@ -326,18 +367,18 @@ class MonthSelector extends StatelessWidget {
         children: [
           Text(label, style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(width: 4),
-          const Icon(Icons.keyboard_arrow_down_rounded, color: navy, size: 20),
+          Icon(Icons.keyboard_arrow_down_rounded, color: context.ink, size: 20),
           const Spacer(),
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.surface,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.calendar_today_outlined,
               size: 18,
-              color: navy,
+              color: context.ink,
             ),
           ),
         ],
@@ -412,7 +453,7 @@ class BalanceCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: navy,
+          color: context.primary,
           borderRadius: BorderRadius.circular(20),
           boxShadow: const [
             BoxShadow(
@@ -525,7 +566,7 @@ class SpendingChart extends StatelessWidget {
     return Card(
       elevation: 0,
       margin: EdgeInsets.zero,
-      color: Colors.white,
+      color: context.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
@@ -535,16 +576,16 @@ class SpendingChart extends StatelessWidget {
               children: [
                 Text(
                   _rs(stats.weekTotal).replaceAll('.00', ''),
-                  style: const TextStyle(
-                    color: navy,
+                  style: TextStyle(
+                    color: context.ink,
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'this week',
-                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                  style: TextStyle(color: context.faint, fontSize: 12),
                 ),
                 const Spacer(),
                 _ChangeBadge(
@@ -552,7 +593,7 @@ class SpendingChart extends StatelessWidget {
                     stats.weekTotal,
                     stats.previousWeekTotal,
                   ),
-                  background: const Color(0xFFF1F5F9),
+                  background: context.subtle,
                   upColor: const Color(0xFFDC2626),
                   downColor: const Color(0xFF059669),
                 ),
@@ -573,7 +614,9 @@ class SpendingChart extends StatelessWidget {
                         width: 23,
                         height: 82 * values[index],
                         decoration: BoxDecoration(
-                          color: selected ? navy : const Color(0xFFB9EBD8),
+                          color: selected
+                              ? context.primary
+                              : const Color(0xFFB9EBD8),
                           borderRadius: BorderRadius.circular(7),
                         ),
                       ),
@@ -581,7 +624,7 @@ class SpendingChart extends StatelessWidget {
                       Text(
                         labels[index],
                         style: TextStyle(
-                          color: selected ? navy : const Color(0xFF94A3B8),
+                          color: selected ? context.ink : context.faint,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                         ),
@@ -609,17 +652,17 @@ class CategoryBreakdown extends StatelessWidget {
     return Card(
       elevation: 0,
       margin: EdgeInsets.zero,
-      color: Colors.white,
+      color: context.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: top.isEmpty
-            ? const Padding(
+            ? Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
                 child: Center(
                   child: Text(
                     'No spending recorded this month',
-                    style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                    style: TextStyle(color: context.faint, fontSize: 13),
                   ),
                 ),
               )
@@ -683,8 +726,8 @@ class CategoryProgress extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: navy,
+                    style: TextStyle(
+                      color: context.ink,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),
@@ -692,8 +735,8 @@ class CategoryProgress extends StatelessWidget {
                   const Spacer(),
                   Text(
                     amount,
-                    style: const TextStyle(
-                      color: navy,
+                    style: TextStyle(
+                      color: context.ink,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
@@ -706,7 +749,7 @@ class CategoryProgress extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: percent,
                   minHeight: 5,
-                  backgroundColor: const Color(0xFFF1F5F9),
+                  backgroundColor: context.subtle,
                   valueColor: AlwaysStoppedAnimation(iconColor),
                 ),
               ),
@@ -769,8 +812,8 @@ class ExpenseTile extends StatelessWidget {
       ),
       title: Text(
         expense.title,
-        style: const TextStyle(
-          color: navy,
+        style: TextStyle(
+          color: context.ink,
           fontSize: 14,
           fontWeight: FontWeight.w700,
         ),
@@ -779,16 +822,22 @@ class ExpenseTile extends StatelessWidget {
         padding: const EdgeInsets.only(top: 4),
         child: Text(
           '${expense.category}  •  ${expense.date}',
-          style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+          style: TextStyle(fontSize: 11, color: context.faint),
         ),
       ),
-      trailing: Text(
-        '- ${expense.amount}',
-        style: const TextStyle(
-          color: navy,
-          fontSize: 13,
-          fontWeight: FontWeight.w800,
-        ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '- ${expense.amount}',
+            style: TextStyle(
+              color: context.ink,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          ExpenseActionsMenu(expense: expense),
+        ],
       ),
     );
   }

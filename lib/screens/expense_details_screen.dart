@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'expense_model.dart';
 import 'finora_store.dart';
 import 'finora_theme.dart';
+import 'app_colors.dart';
 
 class ExpenseDetailsScreen extends StatefulWidget {
   const ExpenseDetailsScreen({
@@ -32,7 +33,7 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
   Future<void> _editExpense() async {
     final updated = await Navigator.of(context).push<ExpenseItem>(
       MaterialPageRoute(
-        builder: (_) => _EditExpenseScreen(
+        builder: (_) => EditExpenseScreen(
           expense: _expense,
           categories:
               FinoraScope.maybeOf(context)?.categories ?? defaultCategories,
@@ -80,8 +81,8 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Expense Details'),
-        backgroundColor: canvas,
-        foregroundColor: navy,
+        backgroundColor: context.page,
+        foregroundColor: context.ink,
         actions: [
           IconButton(
             tooltip: 'Edit expense',
@@ -101,7 +102,7 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
         children: [
           Card(
             elevation: 0,
-            color: Colors.white,
+            color: context.surface,
             margin: EdgeInsets.zero,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
@@ -123,10 +124,10 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'FINORA · EXPENSE',
                     style: TextStyle(
-                      color: Color(0xFF64748B),
+                      color: context.muted,
                       fontSize: 11,
                       letterSpacing: 1.5,
                       fontWeight: FontWeight.w700,
@@ -136,8 +137,8 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
                   Text(
                     _expense.title,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: navy,
+                    style: TextStyle(
+                      color: context.ink,
                       fontSize: 21,
                       fontWeight: FontWeight.w800,
                     ),
@@ -147,18 +148,15 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
                     fit: BoxFit.scaleDown,
                     child: Text(
                       'LKR ${_formattedAmount(_expense.amount)}',
-                      style: const TextStyle(
-                        color: navy,
+                      style: TextStyle(
+                        color: context.ink,
                         fontSize: 38,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
                   const SizedBox(height: 7),
-                  Text(
-                    _expense.date,
-                    style: const TextStyle(color: Color(0xFF64748B)),
-                  ),
+                  Text(_expense.date, style: TextStyle(color: context.muted)),
                 ],
               ),
             ),
@@ -166,7 +164,7 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
           const SizedBox(height: 16),
           Card(
             elevation: 0,
-            color: Colors.white,
+            color: context.surface,
             margin: EdgeInsets.zero,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
@@ -201,10 +199,10 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
             icon: const Icon(Icons.edit_outlined),
             label: const Text('Edit Expense'),
             style: FilledButton.styleFrom(
-              backgroundColor: navy,
+              backgroundColor: context.primary,
               foregroundColor: Colors.white,
               minimumSize: const Size.fromHeight(52),
-              side: const BorderSide(color: navy),
+              side: BorderSide(color: context.primary),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
@@ -226,17 +224,21 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
   }
 }
 
-class _EditExpenseScreen extends StatefulWidget {
-  const _EditExpenseScreen({required this.expense, required this.categories});
+class EditExpenseScreen extends StatefulWidget {
+  const EditExpenseScreen({
+    super.key,
+    required this.expense,
+    required this.categories,
+  });
 
   final ExpenseItem expense;
   final List<AppCategory> categories;
 
   @override
-  State<_EditExpenseScreen> createState() => _EditExpenseScreenState();
+  State<EditExpenseScreen> createState() => _EditExpenseScreenState();
 }
 
-class _EditExpenseScreenState extends State<_EditExpenseScreen> {
+class _EditExpenseScreenState extends State<EditExpenseScreen> {
   late final TextEditingController _amountController;
   late final TextEditingController _titleController;
   late final TextEditingController _notesController;
@@ -296,8 +298,8 @@ class _EditExpenseScreenState extends State<_EditExpenseScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Expense'),
-        backgroundColor: canvas,
-        foregroundColor: navy,
+        backgroundColor: context.page,
+        foregroundColor: context.ink,
       ),
       body: Form(
         key: _formKey,
@@ -382,7 +384,7 @@ class _EditExpenseScreenState extends State<_EditExpenseScreen> {
             FilledButton(
               onPressed: _save,
               style: FilledButton.styleFrom(
-                backgroundColor: navy,
+                backgroundColor: context.primary,
                 minimumSize: const Size.fromHeight(54),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -426,8 +428,8 @@ class _EditField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: navy,
+          style: TextStyle(
+            color: context.ink,
             fontSize: 13,
             fontWeight: FontWeight.w700,
           ),
@@ -462,15 +464,12 @@ class _DetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: navy, size: 20),
-      title: Text(
-        label,
-        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
-      ),
+      leading: Icon(icon, color: context.ink, size: 20),
+      title: Text(label, style: TextStyle(color: context.faint, fontSize: 11)),
       subtitle: Text(
         value,
-        style: const TextStyle(
-          color: navy,
+        style: TextStyle(
+          color: context.ink,
           fontSize: 14,
           fontWeight: FontWeight.w700,
         ),

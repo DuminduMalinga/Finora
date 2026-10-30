@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'support/sample_expenses.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:finora/screens/expense_details_screen.dart';
 import 'package:finora/screens/expense_model.dart';

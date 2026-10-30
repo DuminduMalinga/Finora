@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'finora_store.dart';
 import 'finora_theme.dart';
 import 'monthly_reports_screen.dart';
+import 'app_colors.dart';
 
 const _monthNames = [
   'January',
@@ -57,8 +58,8 @@ class _BudgetOverviewScreenState extends State<BudgetOverviewScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Budget Overview'),
-        backgroundColor: canvas,
-        foregroundColor: navy,
+        backgroundColor: context.page,
+        foregroundColor: context.ink,
         actions: [
           IconButton(
             tooltip: 'Edit budget',
@@ -86,11 +87,11 @@ class _BudgetOverviewScreenState extends State<BudgetOverviewScreen> {
           const SizedBox(height: 24),
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Category budgets',
                   style: TextStyle(
-                    color: navy,
+                    color: context.ink,
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                   ),
@@ -106,13 +107,13 @@ class _BudgetOverviewScreenState extends State<BudgetOverviewScreen> {
           ),
           const SizedBox(height: 8),
           if (cards.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Center(
                 child: Text(
                   'No spending or category limits for this month yet.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                  style: TextStyle(color: context.faint, fontSize: 13),
                 ),
               ),
             )
@@ -137,10 +138,10 @@ class _BudgetOverviewScreenState extends State<BudgetOverviewScreen> {
           shrinkWrap: true,
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
           children: [
-            const Text(
+            Text(
               'Select month',
               style: TextStyle(
-                color: navy,
+                color: context.ink,
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
               ),
@@ -246,8 +247,8 @@ class _AmountSheetState extends State<_AmountSheet> {
           children: [
             Text(
               widget.title,
-              style: const TextStyle(
-                color: navy,
+              style: TextStyle(
+                color: context.ink,
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
               ),
@@ -286,7 +287,7 @@ class _AmountSheetState extends State<_AmountSheet> {
                   }
                 },
                 style: FilledButton.styleFrom(
-                  backgroundColor: navy,
+                  backgroundColor: context.primary,
                   minimumSize: const Size.fromHeight(52),
                 ),
                 child: Text(widget.action),
@@ -355,8 +356,8 @@ class _LimitSheetState extends State<_LimitSheet> {
           children: [
             Text(
               widget.fixed ? '${_category.name} limit' : 'Add category budget',
-              style: const TextStyle(
-                color: navy,
+              style: TextStyle(
+                color: context.ink,
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
               ),
@@ -411,7 +412,7 @@ class _LimitSheetState extends State<_LimitSheet> {
                   }
                 },
                 style: FilledButton.styleFrom(
-                  backgroundColor: navy,
+                  backgroundColor: context.primary,
                   minimumSize: const Size.fromHeight(52),
                 ),
                 child: const Text('Save limit'),
@@ -441,9 +442,9 @@ class _MonthSelector extends StatelessWidget {
       onPressed: onTap,
       style: OutlinedButton.styleFrom(
         alignment: Alignment.centerLeft,
-        backgroundColor: Colors.white,
-        foregroundColor: navy,
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
+        backgroundColor: context.surface,
+        foregroundColor: context.ink,
+        side: BorderSide(color: context.line),
         minimumSize: const Size.fromHeight(48),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -478,19 +479,19 @@ class _BudgetSummary extends StatelessWidget {
     final remainingColor = remaining >= 0 ? emerald : coral;
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: context.surface,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const Align(
+            Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 'MONTHLY BUDGET',
                 style: TextStyle(
-                  color: Color(0xFF64748B),
+                  color: context.muted,
                   fontSize: 11,
                   letterSpacing: 1.1,
                   fontWeight: FontWeight.w800,
@@ -510,7 +511,7 @@ class _BudgetSummary extends StatelessWidget {
                     child: CircularProgressIndicator(
                       value: usedRatio,
                       strokeWidth: 14,
-                      backgroundColor: const Color(0xFFE8F5EF),
+                      backgroundColor: context.subtle,
                       valueColor: AlwaysStoppedAnimation(
                         remaining >= 0 ? emerald : coral,
                       ),
@@ -522,18 +523,15 @@ class _BudgetSummary extends StatelessWidget {
                     children: [
                       Text(
                         '${(usedRatio * 100).round()}%',
-                        style: const TextStyle(
-                          color: navy,
+                        style: TextStyle(
+                          color: context.ink,
                           fontSize: 30,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const Text(
+                      Text(
                         'used',
-                        style: TextStyle(
-                          color: Color(0xFF64748B),
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: context.muted, fontSize: 12),
                       ),
                     ],
                   ),
@@ -546,7 +544,7 @@ class _BudgetSummary extends StatelessWidget {
                 _SummaryValue(
                   label: 'Total budget',
                   value: 'LKR ${_formatAmount(monthlyBudget)}',
-                  color: navy,
+                  color: context.ink,
                 ),
                 _SummaryValue(
                   label: 'Spent',
@@ -583,10 +581,7 @@ class _SummaryValue extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Text(
-            label,
-            style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
-          ),
+          Text(label, style: TextStyle(color: context.faint, fontSize: 10)),
           const SizedBox(height: 5),
           Text(
             value,
@@ -619,10 +614,10 @@ class _BudgetAlert extends StatelessWidget {
         ? amber
         : emerald;
     final background = exceeded
-        ? const Color(0xFFFFE4E6)
+        ? coral.withValues(alpha: 0.14)
         : approaching
-        ? const Color(0xFFFFF4D6)
-        : const Color(0xFFE1F9F1);
+        ? amber.withValues(alpha: 0.16)
+        : emerald.withValues(alpha: 0.14);
     final icon = exceeded
         ? Icons.warning_rounded
         : approaching
@@ -689,7 +684,7 @@ class _CategoryBudgetCard extends StatelessWidget {
     final remaining = (limit ?? 0) - spent;
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: context.surface,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
@@ -716,8 +711,8 @@ class _CategoryBudgetCard extends StatelessWidget {
                       children: [
                         Text(
                           category.name,
-                          style: const TextStyle(
-                            color: navy,
+                          style: TextStyle(
+                            color: context.ink,
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                           ),
@@ -727,10 +722,7 @@ class _CategoryBudgetCard extends StatelessWidget {
                           limit == null
                               ? 'LKR ${_formatAmount(spent)} spent • No limit set'
                               : 'LKR ${_formatAmount(spent)} of LKR ${_formatAmount(limit)}',
-                          style: const TextStyle(
-                            color: Color(0xFF94A3B8),
-                            fontSize: 11,
-                          ),
+                          style: TextStyle(color: context.faint, fontSize: 11),
                         ),
                       ],
                     ),
@@ -751,7 +743,7 @@ class _CategoryBudgetCard extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: ratio.clamp(0, 1).toDouble(),
                   minHeight: 7,
-                  backgroundColor: const Color(0xFFF1F5F9),
+                  backgroundColor: context.subtle,
                   valueColor: AlwaysStoppedAnimation(statusColor),
                 ),
               ),

@@ -27,7 +27,7 @@ void main() {
   testWidgets('Profile matches the 393 by 852 design', (tester) async {
     await openProfile(tester);
     expect(find.text('My Profile'), findsOneWidget);
-    expect(find.text('Alex Morgan'), findsOneWidget);
+    expect(find.text('Guest'), findsOneWidget);
     expect(find.text('LKR 75,000'), findsOneWidget);
     expect(find.text('Add expense'), findsNothing);
     expect(tester.takeException(), isNull);
@@ -38,30 +38,25 @@ void main() {
   });
 
   testWidgets(
-    'Profile edits update the card and account preferences are reachable',
+    'Profile edits update the card and only useful shortcuts remain',
     (tester) async {
       await openProfile(tester);
       await tester.tap(find.text('Edit Profile'));
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(TextFormField, 'Alex Morgan'), findsOneWidget);
-      await tester.enterText(find.byType(TextFormField).first, 'Alex Perera');
+      expect(find.widgetWithText(TextFormField, 'Guest'), findsOneWidget);
+      await tester.enterText(find.byType(TextFormField).first, 'Sam Rivera');
       await tester.tap(find.text('Save Changes'));
       await tester.pumpAndSettle();
-      expect(find.text('Alex Perera'), findsOneWidget);
+      expect(find.text('Sam Rivera'), findsOneWidget);
       expect(find.text('Profile updated successfully'), findsOneWidget);
-      await tester.scrollUntilVisible(
-        find.text('Notification Preferences'),
-        250,
-      );
-      await tester.drag(find.byType(ListView).first, const Offset(0, -220));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Notification Preferences'));
-      await tester.pumpAndSettle();
-      final alert = find.byType(SwitchListTile).first;
-      expect(tester.widget<SwitchListTile>(alert).value, isTrue);
-      await tester.tap(alert);
-      await tester.pumpAndSettle();
-      expect(tester.widget<SwitchListTile>(alert).value, isFalse);
+      for (final removed in [
+        'Notification Preferences',
+        'Change Password',
+        'Connected Accounts',
+        'Personal Account',
+      ]) {
+        expect(find.text(removed), findsNothing, reason: removed);
+      }
       expect(tester.takeException(), isNull);
     },
   );

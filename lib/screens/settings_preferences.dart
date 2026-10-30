@@ -10,14 +10,6 @@ import 'finora_theme.dart';
 class SettingsPreferences extends ChangeNotifier {
   ThemeMode themeMode = ThemeMode.light;
   Color accent = emerald;
-  String currency = 'LKR (Sri Lankan Rupee)';
-  String language = 'English';
-  String firstDay = 'Monday';
-  String dateFormat = 'DD/MM/YYYY';
-  bool expenseReminders = true;
-  bool dailySummary = false;
-  bool budgetAlerts = true;
-  bool weeklyReports = false;
 
   FinoraDatabase? _db;
 
@@ -46,14 +38,6 @@ class SettingsPreferences extends ChangeNotifier {
   Map<String, String> toMap() => {
     'theme_mode': themeMode.name,
     'accent': accent.toARGB32().toString(),
-    'currency': currency,
-    'language': language,
-    'first_day': firstDay,
-    'date_format': dateFormat,
-    'expense_reminders': expenseReminders ? '1' : '0',
-    'daily_summary': dailySummary ? '1' : '0',
-    'budget_alerts': budgetAlerts ? '1' : '0',
-    'weekly_reports': weeklyReports ? '1' : '0',
   };
 
   /// Applies saved values; anything missing keeps its current default.
@@ -64,16 +48,6 @@ class SettingsPreferences extends ChangeNotifier {
     }
     final color = int.tryParse(values['accent'] ?? '');
     if (color != null) accent = Color(color);
-    currency = values['currency'] ?? currency;
-    language = values['language'] ?? language;
-    firstDay = values['first_day'] ?? firstDay;
-    dateFormat = values['date_format'] ?? dateFormat;
-    bool flag(String key, bool fallback) =>
-        values[key] == null ? fallback : values[key] == '1';
-    expenseReminders = flag('expense_reminders', expenseReminders);
-    dailySummary = flag('daily_summary', dailySummary);
-    budgetAlerts = flag('budget_alerts', budgetAlerts);
-    weeklyReports = flag('weekly_reports', weeklyReports);
   }
 
   @override

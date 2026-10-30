@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'finora_store.dart';
 import 'finora_theme.dart';
-
-const _muted = Color(0xFF64748B);
-const _border = Color(0xFFE2E8F0);
+import 'app_colors.dart';
 
 /// Extra suggestions revealed by the "Other" button.
 const _otherCategories = [
@@ -49,8 +47,8 @@ const _otherCategories = [
   AppCategory(
     'Savings',
     Icons.savings_rounded,
-    Color(0xFF14213D),
-    Color(0xFFE2E8F0),
+    Color(0xFF14B8A6),
+    Color(0xFFCCFBF1),
   ),
   AppCategory(
     'Miscellaneous',
@@ -81,6 +79,8 @@ class SetupScreen extends StatefulWidget {
 
 class _SetupScreenState extends State<SetupScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _name = TextEditingController();
+  final _email = TextEditingController();
   final _budget = TextEditingController();
   final _savings = TextEditingController();
   // The categories we suggest first; "Other" reveals more, and the user can
@@ -95,6 +95,8 @@ class _SetupScreenState extends State<SetupScreen> {
 
   @override
   void dispose() {
+    _name.dispose();
+    _email.dispose();
     _budget.dispose();
     _savings.dispose();
     for (final controller in _limits.values) {
@@ -151,6 +153,8 @@ class _SetupScreenState extends State<SetupScreen> {
       return;
     }
     FinoraScope.of(context).completeSetup(
+      name: _name.text,
+      email: _email.text,
       budget: budget,
       savingsGoal: _parse(_savings.text),
       categories: _chosen,
@@ -165,14 +169,14 @@ class _SetupScreenState extends State<SetupScreen> {
     hintText: hint,
     prefixText: 'LKR ',
     filled: true,
-    fillColor: Colors.white,
+    fillColor: context.surface,
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: _border),
+      borderSide: BorderSide(color: context.line),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: _border),
+      borderSide: BorderSide(color: context.line),
     ),
   );
 
@@ -187,16 +191,19 @@ class _SetupScreenState extends State<SetupScreen> {
       label: Text(category.name),
       selected: selected,
       showCheckmark: false,
-      selectedColor: navy,
-      backgroundColor: Colors.white,
-      side: BorderSide(color: selected ? navy : _border),
+      selectedColor: context.primary,
+      backgroundColor: context.surface,
+      side: BorderSide(color: selected ? context.primary : context.line),
       labelStyle: TextStyle(
-        color: selected ? Colors.white : navy,
+        color: selected ? Colors.white : context.ink,
         fontWeight: FontWeight.w600,
       ),
       onSelected: (on) => _toggle(category, on),
     );
   }
+
+  InputDecoration _plainDecoration(String label) =>
+      _decoration(label).copyWith(prefixText: null);
 
   Widget _heading(String title, String subtitle) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
@@ -205,14 +212,14 @@ class _SetupScreenState extends State<SetupScreen> {
       children: [
         Text(
           title,
-          style: const TextStyle(
-            color: navy,
+          style: TextStyle(
+            color: context.ink,
             fontSize: 17,
             fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 3),
-        Text(subtitle, style: const TextStyle(color: _muted, fontSize: 12.5)),
+        Text(subtitle, style: TextStyle(color: context.muted, fontSize: 12.5)),
       ],
     ),
   );
@@ -222,10 +229,10 @@ class _SetupScreenState extends State<SetupScreen> {
     final budget = _parse(_budget.text) ?? 0;
     final remaining = budget - _allocated;
     return Scaffold(
-      backgroundColor: canvas,
+      backgroundColor: context.page,
       appBar: AppBar(
-        backgroundColor: canvas,
-        foregroundColor: navy,
+        backgroundColor: context.page,
+        foregroundColor: context.ink,
         title: const Text('Set up your budget'),
       ),
       body: SafeArea(
@@ -235,8 +242,32 @@ class _SetupScreenState extends State<SetupScreen> {
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
             children: [
+              _heading('1. About you', 'So Finora can greet you by name.'),
+              TextFormField(
+                controller: _name,
+                textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
+                decoration: _plainDecoration('Your name'),
+                validator: (value) =>
+                    (value ?? '').trim().isEmpty ? 'Enter your name' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                decoration: _plainDecoration('Email (optional)'),
+                validator: (value) {
+                  final text = (value ?? '').trim();
+                  if (text.isEmpty) return null;
+                  return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(text)
+                      ? null
+                      : 'Enter a valid email';
+                },
+              ),
+              const SizedBox(height: 26),
               _heading(
-                '1. Budget and savings goal',
+                '2. Budget and savings goal',
                 'The most you plan to spend this month, and what you want to save.',
               ),
               TextFormField(
@@ -273,7 +304,7 @@ class _SetupScreenState extends State<SetupScreen> {
               ),
               const SizedBox(height: 26),
               _heading(
-                '2. Favourite categories',
+                '3. Favourite categories',
                 'Pick the ones you spend on, or add your own.',
               ),
               Wrap(
@@ -289,10 +320,10 @@ class _SetupScreenState extends State<SetupScreen> {
                       size: 18,
                     ),
                     label: const Text('Other'),
-                    backgroundColor: paleBlue,
+                    backgroundColor: context.tint,
                     side: BorderSide.none,
-                    labelStyle: const TextStyle(
-                      color: navy,
+                    labelStyle: TextStyle(
+                      color: context.ink,
                       fontWeight: FontWeight.w600,
                     ),
                     onPressed: () => setState(() => _showOther = !_showOther),
@@ -301,10 +332,10 @@ class _SetupScreenState extends State<SetupScreen> {
               ),
               if (_showOther) ...[
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Other categories',
                   style: TextStyle(
-                    color: navy,
+                    color: context.ink,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
@@ -318,10 +349,10 @@ class _SetupScreenState extends State<SetupScreen> {
                     ActionChip(
                       avatar: const Icon(Icons.add_rounded, size: 18),
                       label: const Text('Add category'),
-                      backgroundColor: paleBlue,
+                      backgroundColor: context.tint,
                       side: BorderSide.none,
-                      labelStyle: const TextStyle(
-                        color: navy,
+                      labelStyle: TextStyle(
+                        color: context.ink,
                         fontWeight: FontWeight.w600,
                       ),
                       onPressed: _addCategory,
@@ -331,15 +362,15 @@ class _SetupScreenState extends State<SetupScreen> {
               ],
               const SizedBox(height: 26),
               _heading(
-                '3. Spending limit for this month',
+                '4. Spending limit for this month',
                 'How much can you spend on each category?',
               ),
               if (_chosen.isEmpty)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
                   child: Text(
                     'Choose categories above to set their limits.',
-                    style: TextStyle(color: _muted, fontSize: 13),
+                    style: TextStyle(color: context.muted, fontSize: 13),
                   ),
                 )
               else
@@ -390,8 +421,8 @@ class _SetupScreenState extends State<SetupScreen> {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: remaining < 0
-                        ? const Color(0xFFFFE4E6)
-                        : const Color(0xFFE1F9F1),
+                        ? coral.withValues(alpha: 0.14)
+                        : emerald.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
@@ -399,8 +430,8 @@ class _SetupScreenState extends State<SetupScreen> {
                       Expanded(
                         child: Text(
                           'Allocated ${_lkr(_allocated)} of ${_lkr(budget)}',
-                          style: const TextStyle(
-                            color: navy,
+                          style: TextStyle(
+                            color: context.ink,
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
                           ),
@@ -529,9 +560,9 @@ class _AddCategoryDialogState extends State<_AddCategoryDialog> {
               onChanged: (_) => setState(() => _error = null),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Icon',
-              style: TextStyle(color: navy, fontWeight: FontWeight.w700),
+              style: TextStyle(color: context.ink, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -545,16 +576,16 @@ class _AddCategoryDialogState extends State<_AddCategoryDialog> {
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: icon == _icon ? navy : const Color(0xFFF8FAFC),
+                        color: icon == _icon ? context.primary : context.subtle,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: icon == _icon ? navy : _border,
+                          color: icon == _icon ? context.ink : context.line,
                         ),
                       ),
                       child: Icon(
                         icon,
                         size: 19,
-                        color: icon == _icon ? Colors.white : navy,
+                        color: icon == _icon ? Colors.white : context.ink,
                       ),
                     ),
                   ),

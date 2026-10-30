@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'expense_model.dart';
 import 'expense_history_screen.dart';
-import 'finora_theme.dart';
+import 'app_colors.dart';
 
 const _months = [
   'January',
@@ -29,7 +29,6 @@ const _colors = [
   Color(0xFFA855F7),
   Color(0xFFF97316),
 ];
-const _muted = Color(0xFF64748B);
 
 String _money(double amount) {
   final parts = amount.toStringAsFixed(2).split('.');
@@ -173,7 +172,7 @@ class _MonthlyReportsScreenState extends State<MonthlyReportsScreen> {
                           minimumSize: const Size(76, 48),
                           backgroundColor:
                               year == _month.year && index + 1 == _month.month
-                              ? paleBlue
+                              ? context.tint
                               : null,
                         ),
                         onPressed: () =>
@@ -214,8 +213,8 @@ class _MonthlyReportsScreenState extends State<MonthlyReportsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Monthly Reports'),
-        backgroundColor: canvas,
-        foregroundColor: navy,
+        backgroundColor: context.page,
+        foregroundColor: context.ink,
         actions: [
           TextButton.icon(
             onPressed: () => Navigator.of(context).push(
@@ -231,9 +230,9 @@ class _MonthlyReportsScreenState extends State<MonthlyReportsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
         children: [
-          const Text(
+          Text(
             'Your Finora spending snapshot',
-            style: TextStyle(color: _muted),
+            style: TextStyle(color: context.muted),
           ),
           const SizedBox(height: 18),
           _Panel(
@@ -276,7 +275,7 @@ class _MonthlyReportsScreenState extends State<MonthlyReportsScreen> {
           Container(
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
-              color: navy,
+              color: context.primary,
               borderRadius: BorderRadius.circular(22),
             ),
             child: Column(
@@ -356,21 +355,21 @@ class _MonthlyReportsScreenState extends State<MonthlyReportsScreen> {
                 ),
                 child: Column(
                   children: [
-                    const CircleAvatar(
+                    CircleAvatar(
                       radius: 32,
-                      backgroundColor: paleBlue,
+                      backgroundColor: context.tint,
                       child: Icon(
                         Icons.insights_rounded,
-                        color: navy,
+                        color: context.ink,
                         size: 32,
                       ),
                     ),
                     const SizedBox(height: 18),
-                    const Text(
+                    Text(
                       'A fresh page for your spending',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: navy,
+                        color: context.ink,
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                       ),
@@ -414,15 +413,15 @@ class _MonthlyReportsScreenState extends State<MonthlyReportsScreen> {
                               children: [
                                 Text(
                                   '${ranked.length}',
-                                  style: const TextStyle(
-                                    color: navy,
+                                  style: TextStyle(
+                                    color: context.ink,
                                     fontSize: 32,
                                     fontWeight: FontWeight.w800,
                                   ),
                                 ),
-                                const Text(
+                                Text(
                                   'categories',
-                                  style: TextStyle(color: _muted),
+                                  style: TextStyle(color: context.muted),
                                 ),
                               ],
                             ),
@@ -457,9 +456,9 @@ class _MonthlyReportsScreenState extends State<MonthlyReportsScreen> {
                 children: [
                   const _Heading('Weekly spending'),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'LKR totals • grouped by day of month',
-                    style: TextStyle(color: _muted, fontSize: 12),
+                    style: TextStyle(color: context.muted, fontSize: 12),
                   ),
                   const SizedBox(height: 20),
                   _WeeklyChart(weeks: report.weeks, month: _month),
@@ -473,9 +472,9 @@ class _MonthlyReportsScreenState extends State<MonthlyReportsScreen> {
                 children: [
                   const _Heading('Category breakdown'),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Ranked by spending • share of monthly total',
-                    style: TextStyle(color: _muted, fontSize: 12),
+                    style: TextStyle(color: context.muted, fontSize: 12),
                   ),
                   for (var i = 0; i < ranked.length; i++)
                     Padding(
@@ -487,8 +486,8 @@ class _MonthlyReportsScreenState extends State<MonthlyReportsScreen> {
                             children: [
                               Text(
                                 '${i + 1}'.padLeft(2, '0'),
-                                style: const TextStyle(
-                                  color: _muted,
+                                style: TextStyle(
+                                  color: context.muted,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -496,8 +495,8 @@ class _MonthlyReportsScreenState extends State<MonthlyReportsScreen> {
                               Expanded(
                                 child: Text(
                                   ranked[i].key,
-                                  style: const TextStyle(
-                                    color: navy,
+                                  style: TextStyle(
+                                    color: context.ink,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -508,15 +507,15 @@ class _MonthlyReportsScreenState extends State<MonthlyReportsScreen> {
                                 children: [
                                   Text(
                                     _money(ranked[i].value),
-                                    style: const TextStyle(
-                                      color: navy,
+                                    style: TextStyle(
+                                      color: context.ink,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                   Text(
                                     '${(ranked[i].value / report.total * 100).toStringAsFixed(1)}%',
-                                    style: const TextStyle(
-                                      color: _muted,
+                                    style: TextStyle(
+                                      color: context.muted,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -531,48 +530,10 @@ class _MonthlyReportsScreenState extends State<MonthlyReportsScreen> {
                               value: ranked[i].value / report.total,
                               minHeight: 6,
                               color: _colors[i % _colors.length],
-                              backgroundColor: canvas,
+                              backgroundColor: context.page,
                             ),
                           ),
                         ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            _Panel(
-              color: paleBlue,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.lightbulb_outline_rounded, color: navy),
-                      SizedBox(width: 8),
-                      Expanded(child: _Heading('Spending insight')),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Highest spending: ${ranked.first.key}',
-                    style: const TextStyle(
-                      color: navy,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${ranked.first.key} accounts for ${(ranked.first.value / report.total * 100).toStringAsFixed(1)}% of your spending (${_money(ranked.first.value)}). Review this category first when planning next month’s budget.',
-                    style: const TextStyle(color: navy, height: 1.5),
-                  ),
-                  if (_month.year == DateTime.now().year &&
-                      _month.month == DateTime.now().month)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 8),
-                      child: Text(
-                        'This month is still in progress; comparisons use full monthly totals.',
-                        style: TextStyle(color: _muted, fontSize: 12),
                       ),
                     ),
                 ],
@@ -586,14 +547,13 @@ class _MonthlyReportsScreenState extends State<MonthlyReportsScreen> {
 }
 
 class _Panel extends StatelessWidget {
-  const _Panel({required this.child, this.color = Colors.white});
+  const _Panel({required this.child});
   final Widget child;
-  final Color color;
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: color,
+      color: context.surface,
       borderRadius: BorderRadius.circular(20),
     ),
     child: child,
@@ -606,8 +566,8 @@ class _Heading extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
     text,
-    style: const TextStyle(
-      color: navy,
+    style: TextStyle(
+      color: context.ink,
       fontSize: 16,
       fontWeight: FontWeight.w800,
     ),
@@ -681,8 +641,8 @@ class _WeeklyChart extends StatelessWidget {
                             fit: BoxFit.scaleDown,
                             child: Text(
                               weeks[i].toStringAsFixed(0),
-                              style: const TextStyle(
-                                color: navy,
+                              style: TextStyle(
+                                color: context.ink,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -701,7 +661,7 @@ class _WeeklyChart extends StatelessWidget {
                                     : math.max(2, weeks[i] / maxValue * 110),
                                 decoration: BoxDecoration(
                                   color: weeks[i] == maxValue
-                                      ? navy
+                                      ? context.primary
                                       : const Color(0xFFA5B4FC),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
@@ -712,15 +672,15 @@ class _WeeklyChart extends StatelessWidget {
                         const SizedBox(height: 8),
                         Text(
                           'W${i + 1}',
-                          style: const TextStyle(
-                            color: navy,
+                          style: TextStyle(
+                            color: context.ink,
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                         Text(
                           range,
-                          style: const TextStyle(color: _muted, fontSize: 10),
+                          style: TextStyle(color: context.muted, fontSize: 10),
                         ),
                       ],
                     ),
@@ -731,10 +691,10 @@ class _WeeklyChart extends StatelessWidget {
           }),
         ),
         const SizedBox(height: 12),
-        const Text(
+        Text(
           'Week ranges show days of the selected month.\nExact amounts available on long press.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: _muted, fontSize: 11),
+          style: TextStyle(color: context.muted, fontSize: 11),
         ),
       ],
     );

@@ -1,88 +1,17 @@
 import 'package:flutter/material.dart';
 
-import 'expense_model.dart';
 import 'finora_theme.dart';
-import 'monthly_reports_screen.dart';
 import 'settings_preferences.dart';
+import 'app_colors.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({
     super.key,
     required this.preferences,
-    required this.expenses,
     required this.onBack,
   });
   final SettingsPreferences preferences;
-  final List<ExpenseItem> expenses;
   final VoidCallback onBack;
-
-  Future<void> _choose(
-    BuildContext context,
-    String title,
-    List<String> values,
-    String selected,
-    ValueChanged<String> changed,
-  ) async {
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(title),
-        children: values
-            .map(
-              (value) => SimpleDialogOption(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-                onPressed: () => Navigator.pop(context, value),
-                child: Row(
-                  children: [
-                    Expanded(child: Text(value)),
-                    if (value == selected)
-                      Icon(
-                        Icons.check_circle_rounded,
-                        color: preferences.accent,
-                        size: 21,
-                      ),
-                  ],
-                ),
-              ),
-            )
-            .toList(),
-      ),
-    );
-    if (result != null) preferences.update(() => changed(result));
-  }
-
-  Future<bool> _confirm(
-    BuildContext context, {
-    required String title,
-    required String message,
-    required String action,
-  }) async =>
-      await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          icon: const Icon(Icons.warning_amber_rounded, color: coral, size: 32),
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: coral,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(action),
-            ),
-          ],
-        ),
-      ) ??
-      false;
 
   void _info(BuildContext context, String title, String message) {
     Navigator.of(context).push(
@@ -99,10 +28,8 @@ class SettingsScreen extends StatelessWidget {
       final theme = Theme.of(context);
       final dark = theme.brightness == Brightness.dark;
       final colors = theme.colorScheme.copyWith(
-        onSurface: dark ? const Color(0xFFF1F5F9) : navy,
-        surfaceContainerLow: dark
-            ? const Color(0xFF242C3D)
-            : const Color(0xFFF5F7FA),
+        onSurface: dark ? const Color(0xFFF1F5F9) : context.ink,
+        surfaceContainerLow: dark ? const Color(0xFF242C3D) : context.subtle,
       );
       final muted = colors.onSurfaceVariant;
       final accent = preferences.accent;
@@ -253,161 +180,8 @@ class SettingsScreen extends StatelessWidget {
                               ),
                           ],
                         ),
-                        const SizedBox(height: 14),
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: colors.surfaceContainerLow,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: accent.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  Icons.account_balance_wallet_outlined,
-                                  color: accent,
-                                  size: 21,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'SPENT THIS MONTH',
-                                      style: TextStyle(
-                                        color: muted,
-                                        fontSize: 9,
-                                        letterSpacing: 1.1,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'LKR ${MonthlyReportData(expenses, DateTime(DateTime.now().year, DateTime.now().month)).total.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(
-                                Icons.check_circle_rounded,
-                                color: accent,
-                                size: 22,
-                              ),
-                            ],
-                          ),
-                        ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-              const _SectionHeading('Preferences', Icons.tune_outlined),
-              _SettingsCard(
-                children: [
-                  _SettingRow(
-                    icon: Icons.payments_outlined,
-                    title: 'Currency',
-                    subtitle: preferences.currency,
-                    onTap: () => _choose(
-                      context,
-                      'Currency',
-                      [
-                        'LKR (Sri Lankan Rupee)',
-                        'USD (US Dollar)',
-                        'EUR (Euro)',
-                        'GBP (British Pound)',
-                      ],
-                      preferences.currency,
-                      (v) => preferences.currency = v,
-                    ),
-                  ),
-                  _SettingRow(
-                    icon: Icons.language_outlined,
-                    title: 'Language',
-                    value: preferences.language,
-                    onTap: () => _choose(
-                      context,
-                      'Language',
-                      ['English', 'Sinhala', 'Tamil'],
-                      preferences.language,
-                      (v) => preferences.language = v,
-                    ),
-                  ),
-                  _SettingRow(
-                    icon: Icons.calendar_view_week_outlined,
-                    title: 'First Day of Week',
-                    value: preferences.firstDay,
-                    onTap: () => _choose(
-                      context,
-                      'First Day of Week',
-                      ['Monday', 'Sunday', 'Saturday'],
-                      preferences.firstDay,
-                      (v) => preferences.firstDay = v,
-                    ),
-                  ),
-                  _SettingRow(
-                    icon: Icons.date_range_outlined,
-                    title: 'Date Format',
-                    value: preferences.dateFormat,
-                    onTap: () => _choose(
-                      context,
-                      'Date Format',
-                      ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'],
-                      preferences.dateFormat,
-                      (v) => preferences.dateFormat = v,
-                    ),
-                  ),
-                ],
-              ),
-              const _SectionHeading(
-                'Notifications',
-                Icons.notifications_none_rounded,
-              ),
-              _SettingsCard(
-                children: [
-                  _ToggleRow(
-                    icon: Icons.receipt_long_outlined,
-                    title: 'Expense Reminders',
-                    value: preferences.expenseReminders,
-                    accent: accent,
-                    onChanged: (v) => preferences.update(
-                      () => preferences.expenseReminders = v,
-                    ),
-                  ),
-                  _ToggleRow(
-                    icon: Icons.today_outlined,
-                    title: 'Daily Spending Summary',
-                    value: preferences.dailySummary,
-                    accent: accent,
-                    onChanged: (v) =>
-                        preferences.update(() => preferences.dailySummary = v),
-                  ),
-                  _ToggleRow(
-                    icon: Icons.account_balance_wallet_outlined,
-                    title: 'Budget Limit Alerts',
-                    value: preferences.budgetAlerts,
-                    accent: accent,
-                    onChanged: (v) =>
-                        preferences.update(() => preferences.budgetAlerts = v),
-                  ),
-                  _ToggleRow(
-                    icon: Icons.bar_chart_rounded,
-                    title: 'Weekly Financial Reports',
-                    value: preferences.weeklyReports,
-                    accent: accent,
-                    onChanged: (v) =>
-                        preferences.update(() => preferences.weeklyReports = v),
                   ),
                 ],
               ),
@@ -420,7 +194,7 @@ class SettingsScreen extends StatelessWidget {
                     onTap: () => _info(
                       context,
                       'About Finora',
-                      'A little clarity. A lot more control.\n\nFinora helps you track expenses, plan budgets, and understand your monthly spending.',
+                      'A little clarity. A lot more control.\n\nFinora helps you track expenses, plan budgets, and understand your monthly spending. Your data is stored on this device.',
                     ),
                   ),
                   const _SettingRow(
@@ -428,92 +202,7 @@ class SettingsScreen extends StatelessWidget {
                     title: 'App Version',
                     value: '1.0.0',
                   ),
-                  _SettingRow(
-                    icon: Icons.policy_outlined,
-                    title: 'Privacy Policy',
-                    onTap: () => _info(
-                      context,
-                      'Privacy Policy',
-                      'This is a design preview, not a published privacy policy. No production data service is connected. A complete policy must be provided before an account service is launched.',
-                    ),
-                  ),
-                  _SettingRow(
-                    icon: Icons.description_outlined,
-                    title: 'Terms & Conditions',
-                    onTap: () => _info(
-                      context,
-                      'Terms & Conditions',
-                      'This is a local Finora preview. Published terms for a production service are not available in this version.',
-                    ),
-                  ),
-                  _SettingRow(
-                    icon: Icons.chat_bubble_outline_rounded,
-                    title: 'Send Feedback',
-                    onTap: () => _info(
-                      context,
-                      'Send Feedback',
-                      'We’d love to hear your ideas. Feedback delivery is not connected in this local preview.',
-                    ),
-                  ),
                 ],
-              ),
-              const SizedBox(height: 24),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  if (!await _confirm(
-                        context,
-                        title: 'Log out of Finora?',
-                        message: 'Are you sure you want to log out?',
-                        action: 'Logout',
-                      ) ||
-                      !context.mounted) {
-                    return;
-                  }
-                  _info(
-                    context,
-                    'Logout',
-                    'This preview has no signed-in account. Your local expense session is still available.',
-                  );
-                },
-                icon: const Icon(Icons.logout_rounded, size: 18),
-                label: const Text('Logout'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              TextButton(
-                onPressed: () async {
-                  if (!await _confirm(
-                        context,
-                        title: 'Delete account permanently?',
-                        message:
-                            'Deleting a real Finora account would permanently remove its profile and financial data. This action cannot be undone.',
-                        action: 'Delete Account',
-                      ) ||
-                      !context.mounted) {
-                    return;
-                  }
-                  _info(
-                    context,
-                    'Delete Account',
-                    'No remote account is connected to delete. To remove local expenses, use Clear App Data.',
-                  );
-                },
-                style: TextButton.styleFrom(
-                  foregroundColor: coral,
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                child: const Text('Delete Account'),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Finora 1.0.0 • Local preview\nPreferences apply to this session. Currency and language selections are previews; recorded amounts remain in LKR.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 10, color: muted, height: 1.6),
               ),
             ],
           ),
@@ -621,13 +310,11 @@ class _SettingRow extends StatelessWidget {
     required this.icon,
     required this.title,
     this.value,
-    this.subtitle,
     this.onTap,
   });
   final IconData icon;
   final String title;
   final String? value;
-  final String? subtitle;
   final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) {
@@ -647,12 +334,6 @@ class _SettingRow extends StatelessWidget {
           fontWeight: FontWeight.w500,
         ),
       ),
-      subtitle: subtitle == null
-          ? null
-          : Text(
-              subtitle!,
-              style: TextStyle(fontSize: 11, color: colors.onSurfaceVariant),
-            ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -673,33 +354,6 @@ class _SettingRow extends StatelessWidget {
       ),
     );
   }
-}
-
-class _ToggleRow extends StatelessWidget {
-  const _ToggleRow({
-    required this.icon,
-    required this.title,
-    required this.value,
-    required this.accent,
-    required this.onChanged,
-  });
-  final IconData icon;
-  final String title;
-  final bool value;
-  final Color accent;
-  final ValueChanged<bool> onChanged;
-  @override
-  Widget build(BuildContext context) => SwitchListTile.adaptive(
-    value: value,
-    onChanged: onChanged,
-    activeTrackColor: accent,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 14),
-    secondary: Icon(icon, size: 20),
-    title: Text(
-      title,
-      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-    ),
-  );
 }
 
 class _ThemeChoice extends StatelessWidget {

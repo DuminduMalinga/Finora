@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'support/sample_expenses.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:finora/main.dart';
 import 'package:finora/screens/categories_screen.dart';
-import 'package:finora/screens/expense_model.dart';
 import 'package:finora/screens/finora_store.dart';
 import 'package:finora/screens/finora_theme.dart';
 

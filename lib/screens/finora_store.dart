@@ -119,11 +119,8 @@ class FinoraStore extends ChangeNotifier {
   final Map<String, double> categoryLimits = {};
   double monthlyBudget = 75000;
   double savingsGoal = 10000;
-  String name = 'Alex Morgan';
-  String email = 'alex.morgan@email.com';
-  bool expenseAlerts = true;
-  bool budgetAlerts = true;
-  bool monthlySummary = false;
+  String name = 'Guest';
+  String email = '';
 
   /// Profile picture bytes; null falls back to the user's initials.
   Uint8List? photo;
@@ -159,21 +156,12 @@ class FinoraStore extends ChangeNotifier {
       expenses
         ..clear()
         ..addAll(data.expenses);
-      bool flag(String key, bool fallback) =>
-          data.settings[key] == null ? fallback : data.settings[key] == '1';
-      expenseAlerts = flag(_expenseAlertsKey, expenseAlerts);
-      budgetAlerts = flag(_budgetAlertsKey, budgetAlerts);
-      monthlySummary = flag(_monthlySummaryKey, monthlySummary);
       for (final e in expenses) {
         if (e.id != null && e.id! > _lastId) _lastId = e.id!;
       }
     }
     notifyListeners();
   }
-
-  static const _expenseAlertsKey = 'profile_expense_alerts';
-  static const _budgetAlertsKey = 'profile_budget_alerts';
-  static const _monthlySummaryKey = 'profile_monthly_summary';
 
   Future<void> _writes = Future.value();
 
@@ -252,6 +240,13 @@ class FinoraStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Puts a deleted expense back where it was (the Undo after a delete).
+  void restoreExpense(ExpenseItem item, int index) {
+    expenses.insert(index.clamp(0, expenses.length), item);
+    _saveAllExpenses();
+    notifyListeners();
+  }
+
   void replaceAllExpenses(Iterable<ExpenseItem> items) {
     final list = items.map(_withId).toList();
     expenses
@@ -263,14 +258,18 @@ class FinoraStore extends ChangeNotifier {
 
   // --- Setup, profile and budget ----------------------------------------
 
-  /// Applies the first-run setup: budget, optional savings goal, chosen
+  /// Applies the first-run setup: name, budget, optional savings goal, chosen
   /// categories and their limits.
   void completeSetup({
+    String? name,
+    String? email,
     required double budget,
     double? savingsGoal,
     required List<AppCategory> categories,
     required Map<String, double> limits,
   }) {
+    if (name != null && name.trim().isNotEmpty) this.name = name.trim();
+    this.email = (email ?? this.email).trim();
     monthlyBudget = budget;
     if (savingsGoal != null) this.savingsGoal = savingsGoal;
     this.categories
@@ -315,22 +314,6 @@ class FinoraStore extends ChangeNotifier {
   void setSavingsGoal(double value) {
     savingsGoal = value;
     _saveProfile();
-    notifyListeners();
-  }
-
-  /// Profile notification switches: 'expense', 'budget' or 'summary'.
-  void setAlert(String which, bool value) {
-    switch (which) {
-      case 'expense':
-        expenseAlerts = value;
-        _save((db) => db.saveSettings({_expenseAlertsKey: value ? '1' : '0'}));
-      case 'budget':
-        budgetAlerts = value;
-        _save((db) => db.saveSettings({_budgetAlertsKey: value ? '1' : '0'}));
-      case 'summary':
-        monthlySummary = value;
-        _save((db) => db.saveSettings({_monthlySummaryKey: value ? '1' : '0'}));
-    }
     notifyListeners();
   }
 

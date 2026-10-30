@@ -5,6 +5,7 @@ import 'categories_screen.dart';
 import 'expense_model.dart';
 import 'finora_store.dart';
 import 'finora_theme.dart';
+import 'app_colors.dart';
 
 const _months = [
   'Jan',
@@ -20,9 +21,6 @@ const _months = [
   'Nov',
   'Dec',
 ];
-
-const _border = Color(0xFFE2E8F0);
-const _muted = Color(0xFF64748B);
 
 class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key, required this.onSaved});
@@ -71,7 +69,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       lastDate: DateTime.now(),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context).colorScheme.copyWith(primary: navy),
+          colorScheme: Theme.of(
+            context,
+          ).colorScheme.copyWith(primary: context.ink),
         ),
         child: child!,
       ),
@@ -122,13 +122,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
-      prefixIcon: icon == null ? null : Icon(icon, color: _muted),
+      hintStyle: TextStyle(color: context.faint),
+      prefixIcon: icon == null ? null : Icon(icon, color: context.muted),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: context.surface,
       contentPadding: const EdgeInsets.all(16),
-      border: border(_border),
-      enabledBorder: border(_border),
+      border: border(context.line),
+      enabledBorder: border(context.line),
       focusedBorder: border(emerald, 2),
       errorBorder: border(coral),
       focusedErrorBorder: border(coral, 2),
@@ -139,8 +139,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     padding: const EdgeInsets.only(bottom: 8),
     child: Text(
       text,
-      style: const TextStyle(
-        color: navy,
+      style: TextStyle(
+        color: context.ink,
         fontSize: 13,
         fontWeight: FontWeight.w700,
       ),
@@ -150,14 +150,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.surface,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
+        backgroundColor: context.surface,
+        surfaceTintColor: context.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: navy),
+          icon: Icon(Icons.arrow_back_rounded, color: context.ink),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: Text(
@@ -232,14 +232,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       decoration: BoxDecoration(
-        color: paleBlue,
+        color: context.tint,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         children: [
-          const Text(
+          Text(
             'Amount',
-            style: TextStyle(color: _muted, fontWeight: FontWeight.w600),
+            style: TextStyle(color: context.muted, fontWeight: FontWeight.w600),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -271,14 +271,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                         RegExp(r'^\d{0,9}\.?\d{0,2}'),
                       ),
                     ],
-                    style: const TextStyle(
-                      color: navy,
+                    style: TextStyle(
+                      color: context.ink,
                       fontSize: 44,
                       fontWeight: FontWeight.w800,
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: '0.00',
-                      hintStyle: TextStyle(color: Color(0xFF94A3B8)),
+                      hintStyle: TextStyle(color: context.faint),
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
@@ -364,23 +364,23 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _border),
+          border: Border.all(color: context.line),
         ),
         child: Row(
           children: [
-            const Icon(Icons.calendar_today_rounded, size: 20, color: _muted),
+            Icon(Icons.calendar_today_rounded, size: 20, color: context.muted),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 _formatDate(_date),
-                style: const TextStyle(
-                  color: navy,
+                style: TextStyle(
+                  color: context.ink,
                   fontWeight: FontWeight.w600,
                   fontSize: 15,
                 ),
               ),
             ),
-            const Icon(Icons.keyboard_arrow_down_rounded, color: _muted),
+            Icon(Icons.keyboard_arrow_down_rounded, color: context.muted),
           ],
         ),
       ),
@@ -400,18 +400,22 @@ class _AddCategoryTile extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: paleBlue,
+          color: context.tint,
           borderRadius: BorderRadius.circular(14),
         ),
-        child: const Column(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add_circle_outline_rounded, color: navy, size: 26),
+            Icon(
+              Icons.add_circle_outline_rounded,
+              color: context.ink,
+              size: 26,
+            ),
             SizedBox(height: 6),
             Text(
               'Add',
               style: TextStyle(
-                color: navy,
+                color: context.ink,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
               ),
@@ -442,10 +446,10 @@ class _CategoryTile extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
-          color: selected ? paleBlue : Colors.white,
+          color: selected ? context.tint : context.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: selected ? emerald : _border,
+            color: selected ? emerald : context.line,
             width: selected ? 2 : 1,
           ),
         ),
@@ -470,7 +474,7 @@ class _CategoryTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: navy,
+                      color: context.ink,
                       fontSize: 11,
                       fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                     ),

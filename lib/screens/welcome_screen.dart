@@ -4,8 +4,7 @@ import 'finora_store.dart';
 import 'finora_theme.dart';
 import 'setup_screen.dart';
 import 'finora_logo.dart';
-
-const _secondary = Color(0xFF64748B);
+import 'app_colors.dart';
 
 /// First screen for new users: introduces Finora, then starts the setup.
 class WelcomeScreen extends StatelessWidget {
@@ -18,7 +17,7 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.surface,
       body: Stack(
         children: [
           const Positioned(
@@ -41,7 +40,7 @@ class WelcomeScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   const _Hero(),
                   const SizedBox(height: 8),
-                  const Text.rich(
+                  Text.rich(
                     TextSpan(
                       children: [
                         TextSpan(text: 'Take Control\nof Your '),
@@ -52,7 +51,7 @@ class WelcomeScreen extends StatelessWidget {
                       ],
                     ),
                     style: TextStyle(
-                      color: navy,
+                      color: context.ink,
                       fontSize: 32,
                       height: 1.16,
                       fontWeight: FontWeight.w800,
@@ -60,11 +59,11 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Track expenses, manage budgets, and understand your '
                     'spending habits — all in one simple place.',
                     style: TextStyle(
-                      color: _secondary,
+                      color: context.muted,
                       fontSize: 14,
                       height: 1.5,
                     ),
@@ -101,13 +100,10 @@ class WelcomeScreen extends StatelessWidget {
                   OutlinedButton(
                     onPressed: () => FinoraScope.of(context).skipSetup(),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: navy,
-                      backgroundColor: Colors.white,
+                      foregroundColor: context.ink,
+                      backgroundColor: context.surface,
                       minimumSize: const Size.fromHeight(50),
-                      side: const BorderSide(
-                        color: Color(0xFFE2E8F0),
-                        width: 1.5,
-                      ),
+                      side: BorderSide(color: context.line, width: 1.5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -121,11 +117,11 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  const Center(
+                  Center(
                     child: Text(
                       'Your finances. Your control. Your privacy.',
                       style: TextStyle(
-                        color: _secondary,
+                        color: context.muted,
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                       ),
@@ -170,7 +166,7 @@ class _Header extends StatelessWidget {
   const _Header();
 
   @override
-  Widget build(BuildContext context) => const Row(
+  Widget build(BuildContext context) => Row(
     children: [
       FinoraLogo(size: 44),
       SizedBox(width: 12),
@@ -180,7 +176,7 @@ class _Header extends StatelessWidget {
           Text(
             'Finora',
             style: TextStyle(
-              color: navy,
+              color: context.ink,
               fontSize: 22,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.5,
@@ -188,7 +184,7 @@ class _Header extends StatelessWidget {
           ),
           Text(
             'Your money. Your control.',
-            style: TextStyle(color: _secondary, fontSize: 12),
+            style: TextStyle(color: context.muted, fontSize: 12),
           ),
         ],
       ),
@@ -239,27 +235,27 @@ class _Hero extends StatelessWidget {
             height: 220,
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: navy,
+              color: context.primary,
               borderRadius: BorderRadius.circular(26),
               boxShadow: _shadow,
             ),
             child: Container(
               padding: const EdgeInsets.fromLTRB(14, 26, 14, 12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F7FA),
+                color: context.subtle,
                 borderRadius: BorderRadius.circular(21),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Total spent',
-                    style: TextStyle(color: _secondary, fontSize: 8),
+                    style: TextStyle(color: context.muted, fontSize: 8),
                   ),
-                  const Text(
+                  Text(
                     'LKR 45,000',
                     style: TextStyle(
-                      color: navy,
+                      color: context.ink,
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                     ),
@@ -273,7 +269,7 @@ class _Hero extends StatelessWidget {
                         value: 0.6,
                         strokeWidth: 9,
                         color: emerald,
-                        backgroundColor: const Color(0xFFE2E8F0),
+                        backgroundColor: context.line,
                         strokeCap: StrokeCap.round,
                       ),
                     ),
@@ -282,7 +278,7 @@ class _Hero extends StatelessWidget {
                   for (final (color, w) in [
                     (emerald, 0.8),
                     (cyan, 0.55),
-                    (navy, 0.35),
+                    (context.ink, 0.35),
                   ])
                     Padding(
                       padding: const EdgeInsets.only(bottom: 6),
@@ -292,7 +288,7 @@ class _Hero extends StatelessWidget {
                           value: w,
                           minHeight: 6,
                           color: color,
-                          backgroundColor: const Color(0xFFE2E8F0),
+                          backgroundColor: context.line,
                         ),
                       ),
                     ),
@@ -327,7 +323,7 @@ class _Hero extends StatelessWidget {
                   Container(
                     height: 28,
                     decoration: BoxDecoration(
-                      color: navy.withValues(alpha: 0.16),
+                      color: context.primary.withValues(alpha: 0.16),
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(20),
                       ),
@@ -342,7 +338,7 @@ class _Hero extends StatelessWidget {
                       alignment: Alignment.centerLeft,
                       padding: const EdgeInsets.only(left: 11),
                       decoration: BoxDecoration(
-                        color: navy,
+                        color: context.primary,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: Colors.white, width: 3),
                       ),
@@ -404,9 +400,9 @@ class _Features extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(11),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F7FA),
+                  color: context.subtle,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(color: context.line),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -422,8 +418,8 @@ class _Features extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       items[i].$4,
-                      style: const TextStyle(
-                        color: navy,
+                      style: TextStyle(
+                        color: context.ink,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         height: 1.25,
@@ -432,8 +428,8 @@ class _Features extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       items[i].$5,
-                      style: const TextStyle(
-                        color: _secondary,
+                      style: TextStyle(
+                        color: context.muted,
                         fontSize: 10,
                         height: 1.3,
                       ),

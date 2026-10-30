@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'data/finora_database.dart';
 
 import 'screens/add_expense_screen.dart';
+import 'screens/app_colors.dart';
 import 'screens/budget_overview_screen.dart';
 import 'screens/categories_screen.dart';
 import 'screens/dashboard_screen.dart';
@@ -90,10 +91,43 @@ class _MyAppState extends State<MyApp> {
             useMaterial3: true,
             brightness: Brightness.dark,
             fontFamily: 'Inter',
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: navy,
-              brightness: Brightness.dark,
-            ).copyWith(secondary: _settings.accent),
+            scaffoldBackgroundColor: const Color(0xFF0B1220),
+            colorScheme:
+                ColorScheme.fromSeed(
+                  seedColor: navy,
+                  brightness: Brightness.dark,
+                ).copyWith(
+                  primary: const Color(0xFF3B5BA9),
+                  onPrimary: Colors.white,
+                  secondary: _settings.accent,
+                  surface: const Color(0xFF162033),
+                  onSurface: const Color(0xFFF1F5F9),
+                  onSurfaceVariant: const Color(0xFF9AA8BD),
+                  outline: const Color(0xFF2C3A56),
+                  outlineVariant: const Color(0xFF2C3A56),
+                  surfaceContainer: const Color(0xFF1D2A42),
+                  surfaceContainerLow: const Color(0xFF1D2A42),
+                ),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Color(0xFF0B1220),
+              foregroundColor: Color(0xFFF1F5F9),
+              surfaceTintColor: Colors.transparent,
+            ),
+            cardTheme: const CardThemeData(color: Color(0xFF162033)),
+            dialogTheme: const DialogThemeData(
+              backgroundColor: Color(0xFF162033),
+              surfaceTintColor: Colors.transparent,
+            ),
+            bottomSheetTheme: const BottomSheetThemeData(
+              backgroundColor: Color(0xFF162033),
+              surfaceTintColor: Colors.transparent,
+            ),
+            dividerTheme: const DividerThemeData(color: Color(0xFF2C3A56)),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFF1F5F9),
+              ),
+            ),
           ),
           themeMode: _settings.themeMode,
           home: _Root(settings: _settings),
@@ -146,7 +180,6 @@ class _HomePageState extends State<HomePage> {
       MonthlyReportsScreen(expenses: expenses),
       SettingsScreen(
         preferences: widget.settings,
-        expenses: expenses,
         onBack: () => setState(() => _selectedIndex = 0),
       ),
     ];
@@ -157,8 +190,9 @@ class _HomePageState extends State<HomePage> {
           ? null
           : FloatingActionButton.extended(
               onPressed: _openAddExpense,
-              backgroundColor: navy,
+              backgroundColor: context.primary,
               foregroundColor: Colors.white,
+              elevation: context.isDark ? 1 : null,
               icon: const Icon(Icons.add_rounded),
               label: const Text(
                 'Add expense',

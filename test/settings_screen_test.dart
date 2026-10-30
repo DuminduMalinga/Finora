@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'support/sample_expenses.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:finora/main.dart';
-import 'package:finora/screens/expense_model.dart';
 import 'package:finora/screens/finora_theme.dart';
 import 'package:finora/screens/monthly_reports_screen.dart';
 import 'package:finora/screens/settings_preferences.dart';
@@ -71,61 +71,39 @@ void main() {
     );
     await tester.tap(find.text('Light'));
     await tester.pumpAndSettle();
-    await reveal(tester, 'Language');
-    await tester.tap(find.text('Language'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Tamil'));
-    await tester.pumpAndSettle();
-    expect(find.text('Tamil'), findsOneWidget);
-    await tester.tap(find.text('Currency'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('LKR (Sri Lankan Rupee)').last);
-    await tester.pumpAndSettle();
-    await reveal(tester, 'Expense Reminders');
-    final switches = find.byType(SwitchListTile);
-    expect(tester.widget<SwitchListTile>(switches.first).value, isTrue);
-    await tester.tap(find.text('Expense Reminders'));
-    await tester.pumpAndSettle();
-    expect(tester.widget<SwitchListTile>(switches.first).value, isFalse);
+    expect(Theme.of(settingContext).brightness, Brightness.light);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Security and Data Management are gone; Logout asks first', (
-    tester,
-  ) async {
+  testWidgets('Settings only has Appearance and About', (tester) async {
     await phone(tester);
     final preferences = SettingsPreferences();
     addTearDown(preferences.dispose);
     await tester.pumpWidget(
       MaterialApp(
         theme: FinoraTheme.theme,
-        home: SettingsScreen(
-          preferences: preferences,
-          expenses: sampleExpenses,
-          onBack: () {},
-        ),
+        home: SettingsScreen(preferences: preferences, onBack: () {}),
       ),
     );
-    await reveal(tester, 'Logout');
+    await reveal(tester, 'App Version');
+    expect(find.text('About Finora'), findsOneWidget);
     for (final removed in [
+      'Preferences',
+      'Currency',
+      'Language',
+      'Notifications',
       'Security',
-      'Change Password',
-      'Enable Biometric Authentication',
-      'App Lock',
-      'Privacy Settings',
       'Data Management',
-      'Export Expense Data',
       'Backup & Restore',
       'Clear App Data',
+      'Privacy Policy',
+      'Terms & Conditions',
+      'Send Feedback',
+      'Logout',
+      'Delete Account',
     ]) {
       expect(find.text(removed), findsNothing, reason: removed);
     }
-    await tester.tap(find.text('Logout'));
-    await tester.pumpAndSettle();
-    expect(find.text('Log out of Finora?'), findsOneWidget);
-    await tester.tap(find.text('Cancel'));
-    await tester.pumpAndSettle();
-    expect(find.text('Log out of Finora?'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

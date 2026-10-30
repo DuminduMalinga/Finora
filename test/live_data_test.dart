@@ -3,6 +3,7 @@ import 'package:finora/screens/finora_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'support/sample_expenses.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -29,8 +30,9 @@ void main() {
     await tester.pumpWidget(const MyApp(showOnboarding: false));
 
     // Nothing is pre-filled.
-    expect(find.text('Rs. 0.00'), findsOneWidget);
+    expect(find.text('LKR 0.00'), findsOneWidget);
     expect(find.text('No spending recorded this month'), findsOneWidget);
+    expect(find.text('No expenses yet'), findsOneWidget);
 
     await tester.tap(find.text('Add expense'));
     await tester.pumpAndSettle();
@@ -43,8 +45,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Home totals follow the expense list.
-    expect(find.text('Rs. 2,500.00'), findsOneWidget);
-    expect(find.text('Rs. 72,500.00 remaining'), findsOneWidget);
+    expect(find.text('LKR 2,500.00'), findsOneWidget);
+    expect(find.text('LKR 72,500.00 remaining'), findsOneWidget);
     expect(find.text('Lunch'), findsOneWidget);
 
     // Budgets: the month total and the category card are live.
@@ -110,5 +112,57 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Gym'), findsOneWidget);
     expect(find.text('LKR 1500.00 this month'), findsOneWidget);
+  });
+
+  testWidgets('every expense row has an Edit / Delete menu', (tester) async {
+    phone(tester);
+    final store = FinoraStore(expenses: List.of(sampleExpenses.take(2)));
+    await tester.pumpWidget(MyApp(store: store));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Expense actions'), findsNWidgets(2));
+
+    // Edit straight from the list.
+    await tester.tap(find.byTooltip('Expense actions').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(1), 'Cafe latte');
+    await tester.scrollUntilVisible(
+      find.text('Save Changes'),
+      250,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Save Changes'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cafe latte'), findsOneWidget);
+    expect(store.expenses.first.title, 'Cafe latte');
+
+    // Delete with a confirmation, then change your mind with Undo.
+    await tester.tap(find.byTooltip('Expense actions').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cafe latte'), findsNothing);
+    expect(store.expenses.length, 1);
+    expect(find.text('Expense deleted'), findsOneWidget);
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cafe latte'), findsOneWidget);
+    expect(store.expenses.length, 2);
+    expect(store.expenses.first.title, 'Cafe latte'); // back in its place
+
+    // The same menu is in the History list.
+    await tester.tap(find.text('Reports'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('View History'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Expense actions'), findsWidgets);
+    await tester.tap(find.byTooltip('Expense actions').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Edit'), findsOneWidget);
+    expect(find.text('Delete'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

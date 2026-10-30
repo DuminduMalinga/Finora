@@ -4,6 +4,7 @@ import 'expense_model.dart';
 import 'finora_store.dart';
 import 'finora_theme.dart';
 import 'monthly_reports_screen.dart';
+import 'app_colors.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key, required this.expenses});
@@ -48,7 +49,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   child: Text(
                     'Categories',
                     style: TextStyle(
-                      color: dark ? theme.colorScheme.onSurface : navy,
+                      color: dark ? theme.colorScheme.onSurface : context.ink,
                       fontSize: 25,
                       fontWeight: FontWeight.w800,
                     ),
@@ -59,7 +60,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   icon: const Icon(Icons.add_rounded, size: 18),
                   label: const Text('Add'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: navy,
+                    backgroundColor: context.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                   ),
@@ -72,7 +73,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               style: TextStyle(
                 color: dark
                     ? theme.colorScheme.onSurfaceVariant
-                    : const Color(0xFF64748B),
+                    : context.muted,
                 fontSize: 13,
                 height: 1.5,
                 decoration: TextDecoration.none,
@@ -194,7 +195,7 @@ class _CategoryCard extends StatelessWidget {
     final dark = theme.brightness == Brightness.dark;
     return Card(
       elevation: 0,
-      color: dark ? theme.colorScheme.surfaceContainer : Colors.white,
+      color: dark ? theme.colorScheme.surfaceContainer : context.surface,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
@@ -216,10 +217,7 @@ class _CategoryCard extends StatelessWidget {
                 PopupMenuButton<String>(
                   tooltip: 'Category options',
                   padding: EdgeInsets.zero,
-                  icon: const Icon(
-                    Icons.more_horiz_rounded,
-                    color: Color(0xFF94A3B8),
-                  ),
+                  icon: Icon(Icons.more_horiz_rounded, color: context.faint),
                   onSelected: (value) {
                     if (value == 'edit') onEdit();
                     if (value == 'delete') onDelete();
@@ -240,7 +238,7 @@ class _CategoryCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: dark ? theme.colorScheme.onSurface : navy,
+                color: dark ? theme.colorScheme.onSurface : context.ink,
                 fontSize: 14,
                 fontWeight: FontWeight.w800,
               ),
@@ -251,7 +249,7 @@ class _CategoryCard extends StatelessWidget {
               style: TextStyle(
                 color: dark
                     ? theme.colorScheme.onSurfaceVariant
-                    : const Color(0xFF64748B),
+                    : context.muted,
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
               ),
@@ -300,7 +298,7 @@ class _CategoryEditorDialogState extends State<CategoryEditorDialog> {
     (Color(0xFFF59E0B), Color(0xFFFFF4D6)),
     (Color(0xFFEF4444), Color(0xFFFFE4E6)),
     (Color(0xFFA855F7), Color(0xFFF3E8FF)),
-    (Color(0xFF14213D), Color(0xFFE2E8F0)),
+    (Color(0xFF14B8A6), Color(0xFFCCFBF1)),
   ];
 
   @override
@@ -337,10 +335,10 @@ class _CategoryEditorDialogState extends State<CategoryEditorDialog> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Choose an icon',
               style: TextStyle(
-                color: navy,
+                color: context.ink,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
               ),
@@ -357,26 +355,26 @@ class _CategoryEditorDialogState extends State<CategoryEditorDialog> {
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: selected ? navy : const Color(0xFFF8FAFC),
+                      color: selected ? context.primary : context.subtle,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: selected ? navy : const Color(0xFFE2E8F0),
+                        color: selected ? context.ink : context.line,
                       ),
                     ),
                     child: Icon(
                       icon,
                       size: 19,
-                      color: selected ? Colors.white : navy,
+                      color: selected ? Colors.white : context.ink,
                     ),
                   ),
                 );
               }).toList(),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Choose a color',
               style: TextStyle(
-                color: navy,
+                color: context.ink,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
               ),
@@ -397,7 +395,7 @@ class _CategoryEditorDialogState extends State<CategoryEditorDialog> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: selected ? navy : Colors.transparent,
+                        color: selected ? context.ink : Colors.transparent,
                         width: 2,
                       ),
                     ),
@@ -433,7 +431,7 @@ class _CategoryEditorDialogState extends State<CategoryEditorDialog> {
               AppCategory(name, _icon, _color, _background),
             );
           },
-          style: FilledButton.styleFrom(backgroundColor: navy),
+          style: FilledButton.styleFrom(backgroundColor: context.primary),
           child: Text(isEditing ? 'Save changes' : 'Add category'),
         ),
       ],

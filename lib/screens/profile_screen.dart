@@ -10,9 +10,7 @@ import 'dashboard_screen.dart';
 import 'finora_store.dart';
 import 'finora_theme.dart';
 import 'monthly_reports_screen.dart';
-
-const _gray = Color(0xFFF5F7FA);
-const _subtle = Color(0xFF64748B);
+import 'app_colors.dart';
 
 /// Returns the bytes of a photo from [source], or null if none was chosen.
 typedef PhotoPicker = Future<Uint8List?> Function(ImageSource source);
@@ -68,18 +66,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
+                Text(
                   'Edit Profile',
                   style: TextStyle(
-                    color: navy,
+                    color: context.ink,
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Changes are saved for this app session.',
-                  style: TextStyle(color: _subtle),
+                  style: TextStyle(color: context.muted),
                 ),
                 const SizedBox(height: 20),
                 TextFormField(
@@ -97,15 +95,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   controller: email,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
-                    labelText: 'Email address',
+                    labelText: 'Email address (optional)',
                     border: OutlineInputBorder(),
                   ),
-                  validator: (value) =>
-                      RegExp(
-                        r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
-                      ).hasMatch((value ?? '').trim())
-                      ? null
-                      : 'Enter a valid email',
+                  validator: (value) {
+                    final text = (value ?? '').trim();
+                    if (text.isEmpty) return null;
+                    return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(text)
+                        ? null
+                        : 'Enter a valid email';
+                  },
                 ),
                 const SizedBox(height: 24),
                 FilledButton(
@@ -163,10 +162,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
+            Text(
               'Profile picture',
               style: TextStyle(
-                color: navy,
+                color: context.ink,
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
               ),
@@ -174,7 +173,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 8),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.photo_camera_outlined, color: navy),
+              leading: Icon(Icons.photo_camera_outlined, color: context.ink),
               title: const Text('Take a photo'),
               onTap: () {
                 Navigator.pop(sheetContext);
@@ -183,7 +182,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.photo_library_outlined, color: navy),
+              leading: Icon(Icons.photo_library_outlined, color: context.ink),
               title: const Text('Choose from gallery'),
               onTap: () {
                 Navigator.pop(sheetContext);
@@ -207,20 +206,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Text(
             '${_lkr(saved)} of ${_lkr(goal)} saved',
-            style: const TextStyle(color: navy, fontWeight: FontWeight.w700),
+            style: TextStyle(color: context.ink, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 12),
           LinearProgressIndicator(
             value: ratio,
             color: emerald,
-            backgroundColor: _gray,
+            backgroundColor: context.subtle,
             minHeight: 8,
           ),
           const SizedBox(height: 10),
           Text(
             '${(ratio * 100).round()}% reached. Saved is the part of this '
             "month's budget you have not spent.",
-            style: const TextStyle(color: _subtle, fontSize: 12),
+            style: TextStyle(color: context.muted, fontSize: 12),
           ),
           const SizedBox(height: 16),
           FilledButton(
@@ -233,7 +232,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               if (value != null) store.setSavingsGoal(value);
             },
             style: FilledButton.styleFrom(
-              backgroundColor: navy,
+              backgroundColor: context.primary,
               minimumSize: const Size.fromHeight(48),
             ),
             child: const Text('Edit goal'),
@@ -258,8 +257,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  color: navy,
+                style: TextStyle(
+                  color: context.ink,
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
                 ),
@@ -273,48 +272,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _notifications() {
-    final store = FinoraScope.of(context);
-    _sheet(
-      'Notification Preferences',
-      StatefulBuilder(
-        builder: (context, update) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Choose what you see in Finora. Preferences are saved on this device.',
-              style: TextStyle(color: _subtle),
-            ),
-            SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Expense reminders'),
-              value: store.expenseAlerts,
-              onChanged: (value) =>
-                  update(() => store.setAlert('expense', value)),
-              activeTrackColor: emerald,
-            ),
-            SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Budget alerts'),
-              value: store.budgetAlerts,
-              onChanged: (value) =>
-                  update(() => store.setAlert('budget', value)),
-              activeTrackColor: emerald,
-            ),
-            SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Monthly summary'),
-              value: store.monthlySummary,
-              onChanged: (value) =>
-                  update(() => store.setAlert('summary', value)),
-              activeTrackColor: emerald,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final store = FinoraScope.of(context);
@@ -323,7 +280,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       monthlyBudget: store.monthlyBudget,
     );
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.surface,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
@@ -334,15 +291,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   IconButton(
                     tooltip: 'Back to dashboard',
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.arrow_back_rounded, color: navy),
+                    icon: Icon(Icons.arrow_back_rounded, color: context.ink),
                   ),
                   const SizedBox(width: 8),
                 ],
-                const Expanded(
+                Expanded(
                   child: Text(
                     'My Profile',
                     style: TextStyle(
-                      color: navy,
+                      color: context.ink,
                       fontSize: 26,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.7,
@@ -371,7 +328,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             child: CircleAvatar(
-                              backgroundColor: paleBlue,
+                              backgroundColor: context.tint,
                               backgroundImage: store.photo == null
                                   ? null
                                   : MemoryImage(store.photo!),
@@ -379,8 +336,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ? null
                                   : Text(
                                       store.initials,
-                                      style: const TextStyle(
-                                        color: navy,
+                                      style: TextStyle(
+                                        color: context.ink,
                                         fontSize: 28,
                                         fontWeight: FontWeight.w800,
                                       ),
@@ -419,49 +376,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     store.name,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: navy,
+                    style: TextStyle(
+                      color: context.ink,
                       fontSize: 23,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    store.email,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: _subtle, fontSize: 13),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                  if (store.email.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      store.email,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: context.muted, fontSize: 13),
                     ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFECFDF5),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.verified_user_outlined,
-                          color: Color(0xFF047857),
-                          size: 14,
-                        ),
-                        SizedBox(width: 5),
-                        Text(
-                          'Personal Account',
-                          style: TextStyle(
-                            color: Color(0xFF047857),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
@@ -470,7 +399,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: const Icon(Icons.edit_outlined, size: 17),
                       label: const Text('Edit Profile'),
                       style: FilledButton.styleFrom(
-                        backgroundColor: navy,
+                        backgroundColor: context.primary,
                         foregroundColor: Colors.white,
                         minimumSize: const Size.fromHeight(46),
                         shape: RoundedRectangleBorder(
@@ -493,7 +422,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.receipt_long_outlined,
                     label: 'Spent This Month',
                     amount: _lkr(stats.monthTotal),
-                    tint: navy,
+                    tint: context.ink,
                     onTap: () =>
                         _open(MonthlyReportsScreen(expenses: widget.expenses)),
                   ),
@@ -543,82 +472,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
             const SizedBox(height: 24),
-            const _SectionTitle('Account'),
-            const SizedBox(height: 12),
-            _MenuGroup(
-              items: [
-                _MenuItem(
-                  Icons.lock_outline_rounded,
-                  'Change Password',
-                  () => _sheet(
-                    'Change Password',
-                    const Text(
-                      'You’re viewing a demo profile. Password changes will be available when an account sign-in service is connected.',
-                    ),
-                  ),
-                ),
-                _MenuItem(
-                  Icons.shield_outlined,
-                  'Privacy & Security',
-                  () => _sheet(
-                    'Privacy & Security',
-                    const Text(
-                      'This demo keeps profile edits in memory for the current session. No bank connection or cloud profile storage is configured.',
-                    ),
-                  ),
-                ),
-                _MenuItem(
-                  Icons.notifications_none_rounded,
-                  'Notification Preferences',
-                  _notifications,
-                ),
-                _MenuItem(
-                  Icons.link_rounded,
-                  'Connected Accounts',
-                  () => _sheet(
-                    'Connected Accounts',
-                    const Column(
-                      children: [
-                        Icon(
-                          Icons.account_balance_outlined,
-                          size: 40,
-                          color: emerald,
-                        ),
-                        SizedBox(height: 12),
-                        Text(
-                          'No accounts connected',
-                          style: TextStyle(
-                            color: navy,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'You can track expenses manually. Bank connections are not available in this demo.',
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            const Text(
+            Text(
               'FINORA',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: navy,
+                color: context.ink,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 3,
                 fontSize: 11,
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'A little clarity. A lot more control.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: _subtle, fontSize: 11),
+              style: TextStyle(color: context.muted, fontSize: 11),
             ),
           ],
         ),
@@ -635,9 +503,9 @@ class _ProfileCard extends StatelessWidget {
     width: double.infinity,
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.surface,
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: const Color(0xFFEDF0F4)),
+      border: Border.all(color: context.line),
       boxShadow: const [
         BoxShadow(
           color: Color(0x0714213D),
@@ -660,8 +528,8 @@ class _SectionTitle extends StatelessWidget {
       Expanded(
         child: Text(
           title,
-          style: const TextStyle(
-            color: navy,
+          style: TextStyle(
+            color: context.ink,
             fontSize: 15,
             fontWeight: FontWeight.w700,
           ),
@@ -670,7 +538,7 @@ class _SectionTitle extends StatelessWidget {
       if (trailing != null)
         Text(
           trailing!,
-          style: const TextStyle(color: _subtle, fontSize: 9, letterSpacing: 1),
+          style: TextStyle(color: context.muted, fontSize: 9, letterSpacing: 1),
         ),
     ],
   );
@@ -691,7 +559,7 @@ class _StatCard extends StatelessWidget {
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) => Material(
-    color: _gray,
+    color: context.subtle,
     borderRadius: BorderRadius.circular(16),
     child: InkWell(
       borderRadius: BorderRadius.circular(16),
@@ -707,8 +575,8 @@ class _StatCard extends StatelessWidget {
               height: 32,
               child: Text(
                 label,
-                style: const TextStyle(
-                  color: _subtle,
+                style: TextStyle(
+                  color: context.muted,
                   fontSize: 11,
                   height: 1.3,
                 ),
@@ -719,8 +587,8 @@ class _StatCard extends StatelessWidget {
               fit: BoxFit.scaleDown,
               child: Text(
                 amount,
-                style: const TextStyle(
-                  color: navy,
+                style: TextStyle(
+                  color: context.ink,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                 ),
@@ -745,11 +613,11 @@ class _MenuGroup extends StatelessWidget {
   final List<_MenuItem> items;
   @override
   Widget build(BuildContext context) => Material(
-    color: Colors.white,
+    color: context.surface,
     clipBehavior: Clip.antiAlias,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16),
-      side: const BorderSide(color: Color(0xFFEDF0F4)),
+      side: BorderSide(color: context.line),
     ),
     child: Column(
       children: [
@@ -763,32 +631,27 @@ class _MenuGroup extends StatelessWidget {
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: _gray,
+                color: context.subtle,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(items[i].icon, color: navy, size: 19),
+              child: Icon(items[i].icon, color: context.ink, size: 19),
             ),
             title: Text(
               items[i].label,
-              style: const TextStyle(
-                color: navy,
+              style: TextStyle(
+                color: context.ink,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            trailing: const Icon(
+            trailing: Icon(
               Icons.chevron_right_rounded,
-              color: Color(0xFF94A3B8),
+              color: context.faint,
               size: 20,
             ),
           ),
           if (i < items.length - 1)
-            const Divider(
-              height: 1,
-              indent: 60,
-              endIndent: 14,
-              color: Color(0xFFF0F2F5),
-            ),
+            Divider(height: 1, indent: 60, endIndent: 14, color: context.line),
         ],
       ],
     ),

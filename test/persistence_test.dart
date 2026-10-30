@@ -87,7 +87,6 @@ void main() {
       );
       store.addExpense(_expense('Lunch', 'Food', 'LKR 1,250.00'));
       store.addExpense(_expense('Dog food', 'Pets', 'LKR 3,000.00'));
-      store.setAlert('summary', true);
       await store.settled();
       await db.close();
 
@@ -99,7 +98,6 @@ void main() {
       expect(store.photo, [1, 2, 3, 4]);
       expect(store.monthlyBudget, 50000);
       expect(store.savingsGoal, 200000);
-      expect(store.monthlySummary, isTrue);
       expect(store.categories.map((c) => c.name), ['Food', 'Pets']);
       expect(store.categories.last.icon, Icons.pets_rounded);
       expect(store.limitFor('Food'), 20000);
@@ -157,8 +155,6 @@ void main() {
     settings.update(() {
       settings.themeMode = ThemeMode.dark;
       settings.accent = const Color(0xFF6366F1);
-      settings.language = 'Tamil';
-      settings.expenseReminders = false;
     });
     await Future<void>.delayed(const Duration(milliseconds: 200));
     await db.close();
@@ -167,9 +163,7 @@ void main() {
     final restored = SettingsPreferences()..attach(db, await db.loadSettings());
     expect(restored.themeMode, ThemeMode.dark);
     expect(restored.accent, const Color(0xFF6366F1));
-    expect(restored.language, 'Tamil');
-    expect(restored.expenseReminders, isFalse);
-    expect(restored.currency, 'LKR (Sri Lankan Rupee)'); // untouched default
+    expect(restored.themeMode, ThemeMode.dark);
     await db.close();
   });
 

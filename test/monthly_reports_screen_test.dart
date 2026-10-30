@@ -86,8 +86,8 @@ void main() {
       expect(find.text('October 2026'), findsOneWidget);
       await tester.scrollUntilVisible(find.text('Weekly spending'), 250);
       expect(tester.takeException(), isNull);
-      await tester.scrollUntilVisible(find.text('Spending insight'), 250);
-      expect(find.text('Highest spending: Shopping'), findsOneWidget);
+      expect(find.text('Spending insight'), findsNothing);
+      expect(find.textContaining('Highest spending'), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.scrollUntilVisible(find.byTooltip('Next month'), -400);
       await tester.tap(find.byTooltip('Next month'));

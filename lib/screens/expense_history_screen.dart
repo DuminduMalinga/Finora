@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'expense_model.dart';
+import 'expense_actions.dart';
 import 'expense_details_screen.dart';
 import 'finora_store.dart';
 import 'finora_theme.dart';
 import 'monthly_reports_screen.dart';
+import 'app_colors.dart';
 
 class ExpenseHistoryScreen extends StatefulWidget {
   const ExpenseHistoryScreen({super.key, required this.expenses});
@@ -94,12 +96,14 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuild when expenses change through the Edit/Delete menu.
+    FinoraScope.maybeOf(context);
     final expenses = _filteredExpenses;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Expense History'),
-        backgroundColor: canvas,
-        foregroundColor: navy,
+        backgroundColor: context.page,
+        foregroundColor: context.ink,
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
@@ -117,7 +121,7 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
               hintText: 'Search expenses',
-              prefixIcon: const Icon(Icons.search_rounded, color: navy),
+              prefixIcon: Icon(Icons.search_rounded, color: context.ink),
               suffixIcon: _query.isEmpty
                   ? null
                   : IconButton(
@@ -126,7 +130,7 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
                       icon: const Icon(Icons.close_rounded),
                     ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: context.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide.none,
@@ -264,10 +268,10 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
           shrinkWrap: true,
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
           children: [
-            const Text(
+            Text(
               'Select month',
               style: TextStyle(
-                color: navy,
+                color: context.ink,
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
               ),
@@ -315,11 +319,11 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
               children: [
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Filter expenses',
                         style: TextStyle(
-                          color: navy,
+                          color: context.ink,
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
                         ),
@@ -336,9 +340,12 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
                   ],
                 ),
                 const SizedBox(height: 14),
-                const Text(
+                Text(
                   'Category',
-                  style: TextStyle(color: navy, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: context.ink,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String?>(
@@ -359,9 +366,12 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
                   onChanged: (value) => setSheetState(() => category = value),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Date range',
-                  style: TextStyle(color: navy, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: context.ink,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Wrap(
@@ -371,9 +381,9 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
                       label: Text(item),
                       selected: date == item,
                       onSelected: (_) => setSheetState(() => date = item),
-                      selectedColor: navy,
+                      selectedColor: context.primary,
                       labelStyle: TextStyle(
-                        color: date == item ? Colors.white : navy,
+                        color: date == item ? Colors.white : context.ink,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -382,9 +392,12 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
                   }).toList(),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Amount',
-                  style: TextStyle(color: navy, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: context.ink,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Wrap(
@@ -400,9 +413,9 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
                           label: Text(item),
                           selected: amount == item,
                           onSelected: (_) => setSheetState(() => amount = item),
-                          selectedColor: navy,
+                          selectedColor: context.primary,
                           labelStyle: TextStyle(
-                            color: amount == item ? Colors.white : navy,
+                            color: amount == item ? Colors.white : context.ink,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -423,7 +436,7 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
                       Navigator.pop(context);
                     },
                     style: FilledButton.styleFrom(
-                      backgroundColor: navy,
+                      backgroundColor: context.primary,
                       minimumSize: const Size.fromHeight(52),
                     ),
                     child: const Text('Apply filters'),
@@ -454,7 +467,7 @@ class _MonthlyTotal extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: navy,
+        color: context.primary,
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
           BoxShadow(
@@ -532,13 +545,13 @@ class _SelectorButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return OutlinedButton.icon(
       onPressed: onTap,
-      icon: Icon(icon, size: 18, color: navy),
+      icon: Icon(icon, size: 18, color: context.ink),
       label: Text(label, overflow: TextOverflow.ellipsis),
       style: OutlinedButton.styleFrom(
         alignment: Alignment.centerLeft,
-        backgroundColor: Colors.white,
-        foregroundColor: navy,
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
+        backgroundColor: context.surface,
+        foregroundColor: context.ink,
+        side: BorderSide(color: context.line),
         minimumSize: const Size.fromHeight(48),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -559,9 +572,9 @@ class _FilterButton extends StatelessWidget {
       icon: const Icon(Icons.tune_rounded, size: 18),
       label: const Text('Filter'),
       style: OutlinedButton.styleFrom(
-        backgroundColor: active ? paleBlue : Colors.white,
-        foregroundColor: navy,
-        side: BorderSide(color: active ? navy : const Color(0xFFE2E8F0)),
+        backgroundColor: active ? context.tint : context.surface,
+        foregroundColor: context.ink,
+        side: BorderSide(color: active ? context.primary : context.line),
         minimumSize: const Size(104, 48),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -582,8 +595,8 @@ class _FilterTag extends StatelessWidget {
       child: InputChip(
         label: Text(label, style: const TextStyle(fontSize: 11)),
         onDeleted: onRemove,
-        deleteIconColor: navy,
-        backgroundColor: paleBlue,
+        deleteIconColor: context.ink,
+        backgroundColor: context.tint,
         side: BorderSide.none,
         padding: const EdgeInsets.symmetric(horizontal: 6),
       ),
@@ -611,8 +624,8 @@ class _TransactionGroup extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 8),
           child: Text(
             title,
-            style: const TextStyle(
-              color: navy,
+            style: TextStyle(
+              color: context.ink,
               fontSize: 14,
               fontWeight: FontWeight.w800,
             ),
@@ -621,7 +634,7 @@ class _TransactionGroup extends StatelessWidget {
         Card(
           elevation: 0,
           margin: const EdgeInsets.only(bottom: 20),
-          color: Colors.white,
+          color: context.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -666,8 +679,8 @@ class _HistoryTransactionTile extends StatelessWidget {
         expense.title,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: navy,
+        style: TextStyle(
+          color: context.ink,
           fontSize: 13,
           fontWeight: FontWeight.w700,
         ),
@@ -678,16 +691,22 @@ class _HistoryTransactionTile extends StatelessWidget {
           '${expense.category}  •  ${expense.date}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+          style: TextStyle(color: context.faint, fontSize: 11),
         ),
       ),
-      trailing: Text(
-        'LKR ${_formatAmount(_amountValue(expense.amount))}',
-        style: const TextStyle(
-          color: navy,
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
-        ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'LKR ${_formatAmount(_amountValue(expense.amount))}',
+            style: TextStyle(
+              color: context.ink,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          ExpenseActionsMenu(expense: expense),
+        ],
       ),
     );
   }
@@ -704,30 +723,30 @@ class _HistoryEmptyState extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(18),
-            decoration: const BoxDecoration(
-              color: paleBlue,
+            decoration: BoxDecoration(
+              color: context.tint,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.receipt_long_outlined,
-              color: navy,
+              color: context.ink,
               size: 34,
             ),
           ),
           const SizedBox(height: 18),
-          const Text(
+          Text(
             'No expenses found',
             style: TextStyle(
-              color: navy,
+              color: context.ink,
               fontSize: 17,
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 7),
-          const Text(
+          Text(
             'Try changing your search or filters.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF94A3B8)),
+            style: TextStyle(color: context.faint),
           ),
         ],
       ),
@@ -751,7 +770,7 @@ const _monthNames = [
 ];
 
 double _amountValue(String amount) {
-  return double.tryParse(amount.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0;
+  return parseAmount(amount) ?? 0;
 }
 
 String _formatAmount(double amount) {
