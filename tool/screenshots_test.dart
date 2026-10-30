@@ -35,12 +35,12 @@ String _date(int daysAgo, String time) {
   return '${_months[d.month - 1]} ${d.day}, ${d.year}';
 }
 
-/// A month of believable spending for "Sam Rivera".
+/// A month of believable spending for "HashTag".
 FinoraStore _sampleStore() {
   final store = FinoraStore()
-    ..setProfile('Sam Rivera', 'sam.rivera@example.com')
-    ..setMonthlyBudget(30000)
-    ..setSavingsGoal(50000)
+    ..setProfile('HashTag', 'hashtag@gmail.com')
+    ..setMonthlyBudget(50000)
+    ..setSavingsGoal(10000)
     ..setCategoryLimit('Food', 8000)
     ..setCategoryLimit('Transport', 6000)
     ..setCategoryLimit('Shopping', 6000)
@@ -156,10 +156,10 @@ void main() {
     await tester.tap(find.text('Get Started'));
     await tester.pumpAndSettle();
     Finder field(String label) => find.widgetWithText(TextFormField, label);
-    await tester.enterText(field('Your name'), 'Sam Rivera');
-    await tester.enterText(field('Email (optional)'), 'sam.rivera@example.com');
-    await tester.enterText(field('Monthly budget limit'), '30000');
-    await tester.enterText(field('Savings goal (optional)'), '50000');
+    await tester.enterText(field('Your name'), 'HashTag');
+    await tester.enterText(field('Email (optional)'), 'hashtag@gmail.com');
+    await tester.enterText(field('Monthly budget limit'), '50000');
+    await tester.enterText(field('Savings goal (optional)'), '10000');
     for (final c in ['Food', 'Transport', 'Shopping', 'Bills']) {
       await tester.tap(find.text(c));
     }
@@ -221,7 +221,12 @@ void main() {
     await tester.tap(find.byTooltip('Back to dashboard'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Notifications (3)'));
+    // The tooltip carries the number of alerts, e.g. "Notifications (2)".
+    await tester.tap(
+      find.byWidgetPredicate(
+        (w) => w is IconButton && (w.tooltip ?? '').startsWith('Notifications'),
+      ),
+    );
     await tester.pumpAndSettle();
     await shot(tester, '12_notifications');
   });
