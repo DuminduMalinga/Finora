@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'expense_model.dart';
+import 'expense_history_screen.dart';
 import 'finora_theme.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -49,9 +50,10 @@ class DashboardScreen extends StatelessWidget {
               SectionHeader(
                 title: 'Recent transactions',
                 action: 'View all',
-                onTap: () => showMessage(
-                  context,
-                  'Use History to view all transactions',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ExpenseHistoryScreen(expenses: expenses),
+                  ),
                 ),
               ),
               const SizedBox(height: 4),
@@ -60,7 +62,12 @@ class DashboardScreen extends StatelessWidget {
                   .map(
                     (expense) => ExpenseTile(
                       expense: expense,
-                      onTap: () => showMessage(context, expense.title),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              ExpenseDetailsScreen(expense: expense),
+                        ),
+                      ),
                     ),
                   ),
             ]),
