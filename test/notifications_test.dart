@@ -5,6 +5,8 @@ import 'package:finora/screens/notifications_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'support/fake_notifications.dart';
 
 ExpenseItem _expense(String category, String amount, String date) =>
     ExpenseItem(
@@ -155,6 +157,120 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('You’re all caught up'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('system notifications', () {
+    late FakeNotificationService phone;
+
+    FinoraStore storeWith({
+      double budget = 1000,
+      bool onboarded = true,
+      SharedPreferences? prefs,
+    }) {
+      final store = FinoraStore(
+        notifier: phone,
+        onboarded: onboarded,
+        prefs: prefs,
+      );
+      store.monthlyBudget = budget;
+      return store;
+    }
+
+    setUp(() => phone = FakeNotificationService());
+
+    test('an alert is sent once when it first appears', () {
+      final store = storeWith();
+      store.addExpense(_expense('Food', 'LKR 500.00', 'Today, 9:00 AM'));
+      expect(phone.shown, isEmpty); // 50%: nothing to say yet
+
+      store.addExpense(_expense('Food', 'LKR 300.00', 'Today, 9:05 AM'));
+      expect(phone.titles, ['Close to your monthly budget']); // 80%
+      expect(phone.shown.single.body, contains('80%'));
+
+      // Still a warning: no repeat.
+      store.addExpense(_expense('Food', 'LKR 10.00', 'Today, 9:10 AM'));
+      expect(phone.shown.length, 1);
+
+      // Crossing the budget is a new, more serious alert.
+      store.addExpense(_expense('Food', 'LKR 300.00', 'Today, 9:15 AM'));
+      expect(phone.titles, [
+        'Close to your monthly budget',
+        'Over your monthly budget',
+      ]);
+      expect(phone.shown.last.body, contains('LKR 110 over'));
+    });
+
+    test('an alert that clears can be sent again later', () {
+      final store = storeWith();
+      store.addExpense(_expense('Food', 'LKR 900.00', 'Today, 9:00 AM'));
+      expect(phone.shown.length, 1);
+
+      store.removeExpense(store.expenses.first); // back under 80%
+      expect(phone.shown.length, 1);
+
+      store.addExpense(_expense('Food', 'LKR 900.00', 'Today, 9:30 AM'));
+      expect(phone.shown.length, 2);
+      expect(phone.titles.last, 'Close to your monthly budget');
+    });
+
+    test('category limits notify, and so does lowering the budget', () {
+      final store = storeWith(budget: 100000)..setCategoryLimit('Food', 100);
+      store.addExpense(_expense('Food', 'LKR 90.00', 'Today, 9:00 AM'));
+      expect(phone.titles, ['Food is almost at its limit']);
+
+      store.setMonthlyBudget(85); // now the whole budget is overspent
+      expect(phone.titles.last, 'Over your monthly budget');
+    });
+
+    test('nothing is sent before setup is finished', () {
+      final store = storeWith(onboarded: false);
+      store.addExpense(_expense('Food', 'LKR 990.00', 'Today, 9:00 AM'));
+      expect(phone.shown, isEmpty);
+    });
+
+    test('renaming a category is not a new alert', () {
+      final store = storeWith(budget: 100000)..setCategoryLimit('Food', 100);
+      store.addExpense(_expense('Food', 'LKR 150.00', 'Today, 9:00 AM'));
+      expect(phone.titles, ['Food is over its limit']);
+
+      store.updateCategory(
+        store.categoryNamed('Food')!,
+        const AppCategory(
+          'Meals',
+          Icons.restaurant_rounded,
+          Colors.red,
+          Colors.white,
+        ),
+      );
+      store.addExpense(_expense('Meals', 'LKR 1.00', 'Today, 9:10 AM'));
+      expect(phone.shown.length, 1);
+    });
+
+    test('permission is requested once, when setup finishes', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final store = storeWith(onboarded: false, prefs: prefs);
+      expect(phone.permissionRequests, 0);
+      store.completeSetup(
+        name: 'Sam',
+        budget: 1000,
+        categories: const [
+          AppCategory(
+            'Food',
+            Icons.restaurant_rounded,
+            Colors.red,
+            Colors.white,
+          ),
+        ],
+        limits: const {'Food': 500},
+      );
+      expect(phone.permissionRequests, 1);
+
+      // Next launch (already onboarded): not asked again.
+      final again = storeWith(prefs: prefs);
+      await again.load();
+      expect(phone.permissionRequests, 1);
     });
   });
 }

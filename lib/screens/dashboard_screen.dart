@@ -29,14 +29,7 @@ const _monthNames = [
   'December',
 ];
 
-String _rs(double amount) {
-  final parts = amount.toStringAsFixed(2).split('.');
-  final whole = parts.first.replaceAllMapped(
-    RegExp(r'\B(?=(\d{3})+(?!\d))'),
-    (_) => ',',
-  );
-  return 'LKR $whole.${parts.last}';
-}
+String _rs(double amount) => 'LKR ${formatAmount(amount)}';
 
 /// Totals shown on Home, derived from the live expense list.
 class DashboardStats {

@@ -688,7 +688,7 @@ class _HistoryTransactionTile extends StatelessWidget {
       subtitle: Padding(
         padding: const EdgeInsets.only(top: 4),
         child: Text(
-          '${expense.category}  •  ${expense.date}',
+          '${expense.category}  •  ${_shortDate(expense.date)}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(color: context.faint, fontSize: 11),
@@ -773,6 +773,10 @@ double _amountValue(String amount) {
   return parseAmount(amount) ?? 0;
 }
 
-String _formatAmount(double amount) {
-  return amount.toStringAsFixed(2);
+String _formatAmount(double amount) => formatAmount(amount);
+
+/// "Today, 9:42 AM" sits under a "Today" header, so only the time is needed.
+String _shortDate(String date) {
+  final m = RegExp(r'^(?:Today|Yesterday), (.+)$').firstMatch(date);
+  return m == null ? date : m.group(1)!;
 }

@@ -1,9 +1,13 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/finora_database.dart';
+import '../data/notification_service.dart';
+import 'budget_alerts.dart';
 import 'expense_model.dart';
 import 'finora_theme.dart';
 
@@ -91,6 +95,16 @@ double? parseAmount(String value) => double.tryParse(
   value.replaceFirst(RegExp(r'^(LKR|Rs\.)\s*'), '').replaceAll(',', '').trim(),
 );
 
+/// Formats an amount with thousands separators: `1250` -> `1,250.00`.
+String formatAmount(double amount, {int decimals = 2}) {
+  final parts = amount.toStringAsFixed(decimals).split('.');
+  final whole = parts.first.replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (_) => ',',
+  );
+  return parts.length > 1 ? '$whole.${parts.last}' : whole;
+}
+
 bool sameCategory(String a, String b) => a.toLowerCase() == b.toLowerCase();
 
 /// Single source of truth for everything the screens show and edit.
@@ -100,6 +114,7 @@ class FinoraStore extends ChangeNotifier {
     this.onboarded = true,
     FinoraDatabase? database,
     SharedPreferences? prefs,
+    this.notifier,
   }) : expenses = expenses ?? <ExpenseItem>[],
        _db = database,
        _prefs = prefs;
@@ -109,6 +124,9 @@ class FinoraStore extends ChangeNotifier {
 
   final FinoraDatabase? _db;
   final SharedPreferences? _prefs;
+
+  /// Shows alerts in the phone's notification tray (null = in-app only).
+  final NotificationService? notifier;
   int _lastId = 0;
 
   /// False until the user finishes (or skips) the first-run setup.
@@ -159,8 +177,87 @@ class FinoraStore extends ChangeNotifier {
       for (final e in expenses) {
         if (e.id != null && e.id! > _lastId) _lastId = e.id!;
       }
+      _restoreAnnounced(data.settings[_announcedKey]);
     }
+    if (onboarded) _askForNotificationPermissionOnce();
     notifyListeners();
+  }
+
+  // --- System notifications ---------------------------------------------
+
+  static const _announcedKey = 'announced_alerts';
+  static const _askedKey = 'asked_notifications';
+  final Set<String> _announced = {};
+  String _announcedMonth = '';
+
+  static String _monthKey(DateTime d) => '${d.year}-${d.month}';
+
+  void _restoreAnnounced(String? stored) {
+    _announced.clear();
+    _announcedMonth = '';
+    if (stored == null) return;
+    try {
+      final data = jsonDecode(stored) as Map<String, dynamic>;
+      if (data['month'] == _monthKey(DateTime.now())) {
+        _announcedMonth = data['month'] as String;
+        _announced.addAll((data['keys'] as List).cast<String>());
+      }
+    } catch (_) {
+      // Unreadable record: start fresh rather than fail.
+    }
+  }
+
+  /// Sends a system notification for every budget alert that is new this
+  /// month, and forgets alerts that no longer apply so they can fire again.
+  void _announceNewAlerts({bool silent = false}) {
+    final service = notifier;
+    if (service == null || !onboarded) return;
+    final now = DateTime.now();
+    final month = _monthKey(now);
+    var changed = false;
+    if (_announcedMonth != month) {
+      _announced.clear();
+      _announcedMonth = month;
+      changed = true;
+    }
+    final alerts = buildNotifications(
+      expenses: expenses,
+      monthlyBudget: monthlyBudget,
+      limits: categoryLimits,
+      now: now,
+    );
+    final current = {for (final a in alerts) a.key};
+    final before = _announced.length;
+    _announced.removeWhere((key) => !current.contains(key));
+    if (_announced.length != before) changed = true;
+    for (final alert in alerts) {
+      if (_announced.add(alert.key)) {
+        changed = true;
+        if (silent) continue;
+        unawaited(
+          service.show(
+            id: alert.key.hashCode & 0x7fffffff,
+            title: alert.title,
+            body: alert.message,
+          ),
+        );
+      }
+    }
+    if (changed) {
+      final record = jsonEncode({'month': month, 'keys': _announced.toList()});
+      _save((db) => db.saveSettings({_announcedKey: record}));
+    }
+  }
+
+  void _askForNotificationPermissionOnce() {
+    final service = notifier;
+    if (service == null) return;
+    final prefs = _prefs;
+    if (prefs != null) {
+      if (prefs.getBool(_askedKey) ?? false) return;
+      prefs.setBool(_askedKey, true);
+    }
+    unawaited(service.requestPermission());
   }
 
   Future<void> _writes = Future.value();
@@ -214,13 +311,11 @@ class FinoraStore extends ChangeNotifier {
 
   // --- Expenses ----------------------------------------------------------
 
-  /// Call after mutating [expenses] directly so listeners rebuild.
-  void touch() => notifyListeners();
-
   void addExpense(ExpenseItem item) {
     final saved = _withId(item);
     expenses.insert(0, saved);
     _save((db) => db.insertExpense(saved));
+    _announceNewAlerts();
     notifyListeners();
   }
 
@@ -230,6 +325,7 @@ class FinoraStore extends ChangeNotifier {
     final saved = updated.copyWith(id: old.id ?? updated.id ?? _newId());
     expenses[index] = saved;
     _save((db) => db.updateExpense(saved));
+    _announceNewAlerts();
     notifyListeners();
   }
 
@@ -237,6 +333,7 @@ class FinoraStore extends ChangeNotifier {
     expenses.remove(item);
     final id = item.id;
     if (id != null) _save((db) => db.deleteExpense(id));
+    _announceNewAlerts();
     notifyListeners();
   }
 
@@ -244,15 +341,7 @@ class FinoraStore extends ChangeNotifier {
   void restoreExpense(ExpenseItem item, int index) {
     expenses.insert(index.clamp(0, expenses.length), item);
     _saveAllExpenses();
-    notifyListeners();
-  }
-
-  void replaceAllExpenses(Iterable<ExpenseItem> items) {
-    final list = items.map(_withId).toList();
-    expenses
-      ..clear()
-      ..addAll(list);
-    _saveAllExpenses();
+    _announceNewAlerts();
     notifyListeners();
   }
 
@@ -281,6 +370,8 @@ class FinoraStore extends ChangeNotifier {
     _markOnboarded();
     _saveProfile();
     _saveCategories();
+    _askForNotificationPermissionOnce();
+    _announceNewAlerts();
     notifyListeners();
   }
 
@@ -289,6 +380,7 @@ class FinoraStore extends ChangeNotifier {
     _markOnboarded();
     _saveProfile();
     _saveCategories();
+    _askForNotificationPermissionOnce();
     notifyListeners();
   }
 
@@ -308,6 +400,7 @@ class FinoraStore extends ChangeNotifier {
   void setMonthlyBudget(double value) {
     monthlyBudget = value;
     _saveProfile();
+    _announceNewAlerts();
     notifyListeners();
   }
 
@@ -323,6 +416,7 @@ class FinoraStore extends ChangeNotifier {
     categoryLimits.removeWhere((key, _) => sameCategory(key, category));
     if (limit != null) categoryLimits[category] = limit;
     _saveCategories();
+    _announceNewAlerts();
     notifyListeners();
   }
 
@@ -374,6 +468,7 @@ class FinoraStore extends ChangeNotifier {
     }
     _saveCategories();
     _saveAllExpenses();
+    _announceNewAlerts(silent: true); // a rename is not a new alert
     notifyListeners();
   }
 
@@ -384,6 +479,7 @@ class FinoraStore extends ChangeNotifier {
     categories.remove(category);
     categoryLimits.removeWhere((key, _) => sameCategory(key, category.name));
     _saveCategories();
+    _announceNewAlerts(silent: true);
     notifyListeners();
   }
 }

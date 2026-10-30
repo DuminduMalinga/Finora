@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'expense_model.dart';
 import 'expense_history_screen.dart';
 import 'app_colors.dart';
+import 'finora_store.dart';
 
 const _months = [
   'January',
@@ -30,10 +31,7 @@ const _colors = [
   Color(0xFFF97316),
 ];
 
-String _money(double amount) {
-  final parts = amount.toStringAsFixed(2).split('.');
-  return 'LKR ${parts.first.replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',')}.${parts.last}';
-}
+String _money(double amount) => 'LKR ${formatAmount(amount)}';
 
 /// Aggregates legacy display dates relative to today, never the selected month.
 class MonthlyReportData {

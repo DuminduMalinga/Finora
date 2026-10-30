@@ -658,12 +658,7 @@ class _MenuGroup extends StatelessWidget {
   );
 }
 
-String _lkr(double amount) {
-  final whole = amount
-      .toStringAsFixed(0)
-      .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
-  return 'LKR $whole';
-}
+String _lkr(double amount) => 'LKR ${formatAmount(amount, decimals: 0)}';
 
 class _GoalDialog extends StatefulWidget {
   const _GoalDialog({required this.initial});

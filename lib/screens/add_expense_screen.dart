@@ -52,15 +52,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   String _formatDate(DateTime d) =>
       '${_months[d.month - 1]} ${d.day}, ${d.year}';
 
-  String _formatAmount(double v) {
-    final parts = v.toStringAsFixed(2).split('.');
-    final whole = parts[0].replaceAllMapped(
-      RegExp(r'\B(?=(\d{3})+(?!\d))'),
-      (_) => ',',
-    );
-    return 'LKR $whole.${parts[1]}';
-  }
-
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -103,7 +94,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       ExpenseItem(
         title: _title.text.trim(),
         category: category.name,
-        amount: _formatAmount(double.parse(_amount.text.trim())),
+        amount: 'LKR ${formatAmount(double.parse(_amount.text.trim()))}',
         date: _formatDate(_date),
         icon: category.icon,
         iconColor: category.color,

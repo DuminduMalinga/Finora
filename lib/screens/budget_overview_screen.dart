@@ -771,4 +771,4 @@ class _CategoryBudgetCard extends StatelessWidget {
   }
 }
 
-String _formatAmount(double amount) => amount.toStringAsFixed(2);
+String _formatAmount(double amount) => formatAmount(amount);

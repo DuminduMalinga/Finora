@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'support/fake_notifications.dart';
 
 ExpenseItem _expense(String title, String category, String amount) =>
     ExpenseItem(
@@ -46,11 +47,14 @@ void main() {
   });
   tearDown(() => dir.deleteSync(recursive: true));
 
-  Future<(FinoraStore, FinoraDatabase)> openStore() async {
+  Future<(FinoraStore, FinoraDatabase)> openStore({
+    FakeNotificationService? notifier,
+  }) async {
     final db = await FinoraDatabase.open(path: path, factory: factory);
     final store = FinoraStore(
       database: db,
       prefs: await SharedPreferences.getInstance(),
+      notifier: notifier,
       onboarded: false,
     );
     await store.load();
@@ -166,6 +170,54 @@ void main() {
     expect(restored.themeMode, ThemeMode.dark);
     await db.close();
   });
+
+  test(
+    'announced alerts are remembered, so a restart does not repeat them',
+    () async {
+      final first = FakeNotificationService();
+      var (store, db) = await openStore(notifier: first);
+      store.completeSetup(
+        budget: 1000,
+        categories: const [
+          AppCategory(
+            'Food',
+            Icons.restaurant_rounded,
+            Colors.red,
+            Colors.white,
+          ),
+        ],
+        limits: const {'Food': 5000},
+      );
+      store.addExpense(
+        _expense(
+          'Lunch',
+          'Food',
+          'LKR 900.00',
+        ).copyWith(date: 'Today, 9:00 AM'),
+      );
+      await store.settled();
+      expect(first.titles, ['Close to your monthly budget']);
+      await db.close();
+
+      final second = FakeNotificationService();
+      (store, db) = await openStore(notifier: second);
+      expect(second.shown, isEmpty); // nothing on launch
+      store.addExpense(
+        _expense('Snack', 'Food', 'LKR 10.00').copyWith(date: 'Today, 9:00 AM'),
+      );
+      expect(second.shown, isEmpty); // still the same warning
+      store.addExpense(
+        _expense(
+          'Dinner',
+          'Food',
+          'LKR 300.00',
+        ).copyWith(date: 'Today, 9:00 AM'),
+      );
+      expect(second.titles, ['Over your monthly budget']); // genuinely new
+      await store.settled();
+      await db.close();
+    },
+  );
 
   testWidgets('the welcome flow is shown once, then never again', (
     tester,

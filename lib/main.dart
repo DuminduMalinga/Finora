@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data/finora_database.dart';
+import 'data/notification_service.dart';
 
 import 'screens/add_expense_screen.dart';
 import 'screens/app_colors.dart';
@@ -12,6 +13,7 @@ import 'screens/dashboard_screen.dart';
 import 'screens/finora_store.dart';
 import 'screens/finora_theme.dart';
 import 'screens/monthly_reports_screen.dart';
+import 'screens/notifications_screen.dart';
 import 'screens/settings_preferences.dart';
 import 'screens/settings_screen.dart';
 import 'screens/welcome_screen.dart';
@@ -23,6 +25,7 @@ Future<void> main() async {
   // User data lives in SQLite on phones. Other platforms (desktop, web) run
   // without saving until a database is configured for them.
   FinoraDatabase? database;
+  NotificationService? notifier;
   if (!kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.android ||
           defaultTargetPlatform == TargetPlatform.iOS)) {
@@ -31,9 +34,15 @@ Future<void> main() async {
     } catch (error) {
       debugPrint('Finora: could not open the database ($error)');
     }
+    notifier = await LocalNotificationService.create();
   }
 
-  final store = FinoraStore(database: database, prefs: prefs, onboarded: false);
+  final store = FinoraStore(
+    database: database,
+    prefs: prefs,
+    notifier: notifier,
+    onboarded: false,
+  );
   await store.load();
   final settings = SettingsPreferences();
   if (database != null) {
@@ -66,8 +75,30 @@ class _MyAppState extends State<MyApp> {
   late final _store =
       widget.store ?? FinoraStore(onboarded: !widget.showOnboarding);
 
+  final _navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    final notifier = _store.notifier;
+    if (notifier == null) return;
+    // Tapping a budget alert in the notification tray opens the alerts list.
+    notifier.onOpen = _openNotifications;
+    if (notifier.launchedFromNotification) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _openNotifications());
+    }
+  }
+
+  void _openNotifications() {
+    if (!_store.onboarded) return;
+    _navigatorKey.currentState?.push(
+      MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()),
+    );
+  }
+
   @override
   void dispose() {
+    _store.notifier?.onOpen = null;
     _settings.dispose();
     _store.dispose();
     super.dispose();
@@ -80,6 +111,7 @@ class _MyAppState extends State<MyApp> {
       builder: (context, _) => FinoraScope(
         store: _store,
         child: MaterialApp(
+          navigatorKey: _navigatorKey,
           title: 'Finora',
           debugShowCheckedModeBanner: false,
           theme: FinoraTheme.theme.copyWith(

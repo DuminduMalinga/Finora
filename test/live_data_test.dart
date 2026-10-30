@@ -52,19 +52,19 @@ void main() {
     // Budgets: the month total and the category card are live.
     await tester.tap(find.text('Budgets'));
     await tester.pumpAndSettle();
-    expect(find.text('LKR 2500.00 spent • No limit set'), findsOneWidget);
+    expect(find.text('LKR 2,500.00 spent • No limit set'), findsOneWidget);
     await tester.tap(find.text('Food'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField), '10000');
     await tester.tap(find.text('Save limit'));
     await tester.pumpAndSettle();
-    expect(find.text('LKR 2500.00 of LKR 10000.00'), findsOneWidget);
+    expect(find.text('LKR 2,500.00 of LKR 10,000.00'), findsOneWidget);
     expect(find.text('25%'), findsWidgets);
 
     // Categories show this month's spend.
     await tester.tap(find.text('Categories'));
     await tester.pumpAndSettle();
-    expect(find.text('LKR 2500.00 this month'), findsOneWidget);
+    expect(find.text('LKR 2,500.00 this month'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -111,7 +111,7 @@ void main() {
     await tester.tap(find.text('Categories'));
     await tester.pumpAndSettle();
     expect(find.text('Gym'), findsOneWidget);
-    expect(find.text('LKR 1500.00 this month'), findsOneWidget);
+    expect(find.text('LKR 1,500.00 this month'), findsOneWidget);
   });
 
   testWidgets('every expense row has an Edit / Delete menu', (tester) async {

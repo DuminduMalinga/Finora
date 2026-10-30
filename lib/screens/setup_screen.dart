@@ -58,12 +58,7 @@ const _otherCategories = [
   ),
 ];
 
-String _lkr(double amount) {
-  final whole = amount
-      .toStringAsFixed(0)
-      .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
-  return 'LKR $whole';
-}
+String _lkr(double amount) => 'LKR ${formatAmount(amount, decimals: 0)}';
 
 double? _parse(String? text) =>
     double.tryParse((text ?? '').replaceAll(',', '').trim());
@@ -164,10 +159,14 @@ class _SetupScreenState extends State<SetupScreen> {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
-  InputDecoration _decoration(String label, {String? hint}) => InputDecoration(
+  InputDecoration _decoration(
+    String label, {
+    String? hint,
+    bool money = true,
+  }) => InputDecoration(
     labelText: label,
     hintText: hint,
-    prefixText: 'LKR ',
+    prefixText: money ? 'LKR ' : null,
     filled: true,
     fillColor: context.surface,
     border: OutlineInputBorder(
@@ -203,7 +202,7 @@ class _SetupScreenState extends State<SetupScreen> {
   }
 
   InputDecoration _plainDecoration(String label) =>
-      _decoration(label).copyWith(prefixText: null);
+      _decoration(label, money: false);
 
   Widget _heading(String title, String subtitle) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
@@ -425,21 +424,21 @@ class _SetupScreenState extends State<SetupScreen> {
                         : emerald.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          'Allocated ${_lkr(_allocated)} of ${_lkr(budget)}',
-                          style: TextStyle(
-                            color: context.ink,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                          ),
+                      Text(
+                        'Allocated ${_lkr(_allocated)} of ${_lkr(budget)}',
+                        style: TextStyle(
+                          color: context.ink,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
                         ),
                       ),
+                      const SizedBox(height: 2),
                       Text(
                         remaining < 0
-                            ? '${_lkr(-remaining)} over'
+                            ? '${_lkr(-remaining)} over your budget'
                             : '${_lkr(remaining)} left',
                         style: TextStyle(
                           color: remaining < 0 ? coral : emerald,

@@ -245,7 +245,7 @@ class _CategoryCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'LKR ${spent.toStringAsFixed(2)} this month',
+              'LKR ${formatAmount(spent)} this month',
               style: TextStyle(
                 color: dark
                     ? theme.colorScheme.onSurfaceVariant

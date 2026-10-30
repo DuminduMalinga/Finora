@@ -31,6 +31,20 @@ void main() {
     expect(find.text('Set up your budget'), findsOneWidget);
   }
 
+  testWidgets('only the money fields carry the LKR prefix', (tester) async {
+    await openSetup(tester);
+    String? prefix(String label) => tester
+        .widget<TextField>(
+          find.descendant(of: field(label), matching: find.byType(TextField)),
+        )
+        .decoration
+        ?.prefixText;
+    expect(prefix('Your name'), isNull);
+    expect(prefix('Email (optional)'), isNull);
+    expect(prefix('Monthly budget limit'), 'LKR ');
+    expect(prefix('Savings goal (optional)'), 'LKR ');
+  });
+
   testWidgets('setup saves the budget, categories and limits into the app', (
     tester,
   ) async {
@@ -91,10 +105,10 @@ void main() {
     // Budgets show the chosen categories with their limits.
     await tester.tap(find.text('Budgets'));
     await tester.pumpAndSettle();
-    expect(find.text('LKR 0.00 of LKR 20000.00'), findsOneWidget);
-    expect(find.text('LKR 0.00 of LKR 10000.00'), findsOneWidget);
-    expect(find.text('LKR 0.00 of LKR 3000.00'), findsOneWidget);
-    expect(find.text('LKR 0.00 of LKR 2000.00'), findsOneWidget);
+    expect(find.text('LKR 0.00 of LKR 20,000.00'), findsOneWidget);
+    expect(find.text('LKR 0.00 of LKR 10,000.00'), findsOneWidget);
+    expect(find.text('LKR 0.00 of LKR 3,000.00'), findsOneWidget);
+    expect(find.text('LKR 0.00 of LKR 2,000.00'), findsOneWidget);
 
     // Categories lists only the chosen ones (plus the custom one).
     await tester.tap(find.text('Categories'));

@@ -482,15 +482,7 @@ String _amount(String value) {
   return value.replaceFirst(RegExp(r'^(LKR|Rs\.)\s*'), '');
 }
 
-String _formattedAmount(String value) {
-  final number = double.tryParse(_amount(value).replaceAll(',', '')) ?? 0;
-  final parts = number.toStringAsFixed(2).split('.');
-  final whole = parts.first.replaceAllMapped(
-    RegExp(r'\B(?=(\d{3})+(?!\d))'),
-    (_) => ',',
-  );
-  return '$whole.${parts.last}';
-}
+String _formattedAmount(String value) => formatAmount(parseAmount(value) ?? 0);
 
 const _months = [
   'Jan',
