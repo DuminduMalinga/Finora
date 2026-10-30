@@ -11,9 +11,28 @@ class ExpenseItem {
     required this.icon,
     required this.iconColor,
     required this.background,
-    this.paymentMethod = 'Visa •••• 4832',
-    this.notes = 'Personal expense',
+    this.notes = '',
   });
+
+  ExpenseItem copyWith({
+    String? title,
+    String? category,
+    String? amount,
+    String? date,
+    IconData? icon,
+    Color? iconColor,
+    Color? background,
+    String? notes,
+  }) => ExpenseItem(
+    title: title ?? this.title,
+    category: category ?? this.category,
+    amount: amount ?? this.amount,
+    date: date ?? this.date,
+    icon: icon ?? this.icon,
+    iconColor: iconColor ?? this.iconColor,
+    background: background ?? this.background,
+    notes: notes ?? this.notes,
+  );
   final String title;
   final String category;
   final String amount;
@@ -21,10 +40,10 @@ class ExpenseItem {
   final IconData icon;
   final Color iconColor;
   final Color background;
-  final String paymentMethod;
   final String notes;
 }
 
+/// Fixture data for tests; the app itself starts with no transactions.
 const sampleExpenses = [
   ExpenseItem(
     title: 'Café Mocha & Croissant',

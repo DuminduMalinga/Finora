@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'expense_model.dart';
 import 'finora_theme.dart';
+import 'monthly_reports_screen.dart';
 import 'settings_preferences.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -99,14 +100,13 @@ class SettingsScreen extends StatelessWidget {
   void _export(BuildContext context) {
     String quote(String value) => '"${value.replaceAll('"', '""')}"';
     final csv = [
-      'Title,Category,Amount,Date,Payment method,Notes',
+      'Title,Category,Amount,Date,Notes',
       ...expenses.map(
         (e) => [
           e.title,
           e.category,
           e.amount,
           e.date,
-          e.paymentMethod,
           e.notes,
         ].map(quote).join(','),
       ),
@@ -402,7 +402,7 @@ class SettingsScreen extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'THEME PREVIEW',
+                                      'SPENT THIS MONTH',
                                       style: TextStyle(
                                         color: muted,
                                         fontSize: 9,
@@ -411,9 +411,9 @@ class SettingsScreen extends StatelessWidget {
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    const Text(
-                                      'LKR 24,500.00',
-                                      style: TextStyle(
+                                    Text(
+                                      'LKR ${MonthlyReportData(expenses, DateTime(DateTime.now().year, DateTime.now().month)).total.toStringAsFixed(2)}',
+                                      style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w800,
                                       ),
@@ -641,7 +641,7 @@ class SettingsScreen extends StatelessWidget {
                     onTap: () => _info(
                       context,
                       'Terms & Conditions',
-                      'This is a local Spendly preview. Sample amounts are for demonstration. Published terms for a production service are not available in this version.',
+                      'This is a local Spendly preview. Published terms for a production service are not available in this version.',
                     ),
                   ),
                   _SettingRow(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'expense_model.dart';
+import 'finora_store.dart';
 import 'finora_theme.dart';
 
 class ExpenseDetailsScreen extends StatefulWidget {
@@ -30,7 +31,13 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
 
   Future<void> _editExpense() async {
     final updated = await Navigator.of(context).push<ExpenseItem>(
-      MaterialPageRoute(builder: (_) => _EditExpenseScreen(expense: _expense)),
+      MaterialPageRoute(
+        builder: (_) => _EditExpenseScreen(
+          expense: _expense,
+          categories:
+              FinoraScope.maybeOf(context)?.categories ?? defaultCategories,
+        ),
+      ),
     );
     if (updated == null || !mounted) return;
     setState(() => _expense = updated);
@@ -179,12 +186,6 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
                 ),
                 const Divider(height: 1, indent: 64),
                 _DetailRow(
-                  label: 'Payment method',
-                  value: _expense.paymentMethod,
-                  icon: Icons.credit_card_rounded,
-                ),
-                const Divider(height: 1, indent: 64),
-                _DetailRow(
                   label: 'Notes',
                   value: _expense.notes.isEmpty
                       ? 'No notes added'
@@ -226,9 +227,10 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
 }
 
 class _EditExpenseScreen extends StatefulWidget {
-  const _EditExpenseScreen({required this.expense});
+  const _EditExpenseScreen({required this.expense, required this.categories});
 
   final ExpenseItem expense;
+  final List<AppCategory> categories;
 
   @override
   State<_EditExpenseScreen> createState() => _EditExpenseScreenState();
@@ -238,7 +240,6 @@ class _EditExpenseScreenState extends State<_EditExpenseScreen> {
   late final TextEditingController _amountController;
   late final TextEditingController _titleController;
   late final TextEditingController _notesController;
-  late final TextEditingController _paymentController;
   late final TextEditingController _dateController;
   late String _category;
   DateTime? _selectedDate;
@@ -252,9 +253,6 @@ class _EditExpenseScreenState extends State<_EditExpenseScreen> {
     );
     _titleController = TextEditingController(text: widget.expense.title);
     _notesController = TextEditingController(text: widget.expense.notes);
-    _paymentController = TextEditingController(
-      text: widget.expense.paymentMethod,
-    );
     _dateController = TextEditingController(text: widget.expense.date);
     _category = widget.expense.category;
     _selectedDate = _parseDate(widget.expense.date);
@@ -265,9 +263,15 @@ class _EditExpenseScreenState extends State<_EditExpenseScreen> {
     _amountController.dispose();
     _titleController.dispose();
     _notesController.dispose();
-    _paymentController.dispose();
     _dateController.dispose();
     super.dispose();
+  }
+
+  AppCategory? get _chosen {
+    for (final category in widget.categories) {
+      if (sameCategory(category.name, _category)) return category;
+    }
+    return null;
   }
 
   void _save() {
@@ -279,16 +283,9 @@ class _EditExpenseScreenState extends State<_EditExpenseScreen> {
         category: _category,
         amount: 'LKR ${_formattedAmount(_amountController.text.trim())}',
         date: _dateController.text,
-        icon: _category == widget.expense.category
-            ? widget.expense.icon
-            : _categoryIcons[_category]!,
-        iconColor: _category == widget.expense.category
-            ? widget.expense.iconColor
-            : navy,
-        background: _category == widget.expense.category
-            ? widget.expense.background
-            : paleBlue,
-        paymentMethod: _paymentController.text.trim(),
+        icon: _chosen?.icon ?? widget.expense.icon,
+        iconColor: _chosen?.color ?? widget.expense.iconColor,
+        background: _chosen?.background ?? widget.expense.background,
         notes: _notesController.text.trim(),
       ),
     );
@@ -338,14 +335,18 @@ class _EditExpenseScreenState extends State<_EditExpenseScreen> {
               initialValue: _category,
               isExpanded: true,
               decoration: const InputDecoration(labelText: 'Category'),
-              items: {..._categoryIcons.keys, widget.expense.category}
-                  .map(
-                    (category) => DropdownMenuItem(
-                      value: category,
-                      child: Text(category),
-                    ),
-                  )
-                  .toList(),
+              items:
+                  {
+                        ...widget.categories.map((c) => c.name),
+                        widget.expense.category,
+                      }
+                      .map(
+                        (category) => DropdownMenuItem(
+                          value: category,
+                          child: Text(category),
+                        ),
+                      )
+                      .toList(),
               onChanged: (value) => setState(() => _category = value!),
             ),
             const SizedBox(height: 18),
@@ -369,28 +370,6 @@ class _EditExpenseScreenState extends State<_EditExpenseScreen> {
                 _dateController.text =
                     '${_months[picked.month - 1]} ${picked.day}, ${picked.year}';
               },
-            ),
-            const SizedBox(height: 18),
-            DropdownButtonFormField<String>(
-              initialValue: widget.expense.paymentMethod,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Payment method'),
-              items:
-                  {
-                        widget.expense.paymentMethod,
-                        'Cash',
-                        'Card',
-                        'Bank',
-                        'Wallet',
-                      }
-                      .map(
-                        (method) => DropdownMenuItem(
-                          value: method,
-                          child: Text(method),
-                        ),
-                      )
-                      .toList(),
-              onChanged: (value) => _paymentController.text = value!,
             ),
             const SizedBox(height: 18),
             _EditField(
@@ -546,16 +525,3 @@ DateTime? _parseDate(String value) {
   );
   return date.isAfter(now) ? now : date;
 }
-
-const _categoryIcons = {
-  'Food & Dining': Icons.restaurant_rounded,
-  'Food': Icons.restaurant_rounded,
-  'Transport': Icons.directions_car_filled_rounded,
-  'Shopping': Icons.shopping_bag_rounded,
-  'Bills & Utilities': Icons.receipt_long_rounded,
-  'Bills': Icons.receipt_long_rounded,
-  'Education': Icons.school_rounded,
-  'Health': Icons.favorite_rounded,
-  'Entertainment': Icons.movie_rounded,
-  'Other': Icons.more_horiz_rounded,
-};

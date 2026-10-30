@@ -1,14 +1,113 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import 'expense_model.dart';
 import 'expense_history_screen.dart';
 import 'expense_details_screen.dart';
 import 'budget_overview_screen.dart';
+import 'finora_store.dart';
 import 'finora_theme.dart';
 import 'monthly_reports_screen.dart';
 import 'profile_screen.dart';
 
-class DashboardScreen extends StatelessWidget {
+const _monthNames = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+String _rs(double amount) {
+  final parts = amount.toStringAsFixed(2).split('.');
+  final whole = parts.first.replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (_) => ',',
+  );
+  return 'Rs. $whole.${parts.last}';
+}
+
+/// Totals shown on Home, derived from the live expense list.
+class DashboardStats {
+  DashboardStats(
+    List<ExpenseItem> expenses, {
+    required this.monthlyBudget,
+    DateTime? now,
+  }) {
+    final today = DateUtils.dateOnly(now ?? DateTime.now());
+    final monday = today.subtract(Duration(days: today.weekday - 1));
+    final lastMonday = monday.subtract(const Duration(days: 7));
+    final previousMonth = DateTime(today.year, today.month - 1);
+    for (final expense in expenses) {
+      final date = MonthlyReportData.parseDate(expense.date, today);
+      final amount = parseAmount(expense.amount);
+      if (date == null || amount == null || !amount.isFinite || amount <= 0) {
+        continue;
+      }
+      final day = DateUtils.dateOnly(date);
+      if (day.year == previousMonth.year && day.month == previousMonth.month) {
+        previousMonthTotal += amount;
+      }
+      if (day.year == today.year && day.month == today.month) {
+        monthTotal += amount;
+        final entry = _categories[expense.category];
+        _categories[expense.category] = (
+          (entry?.$1 ?? 0) + amount,
+          entry?.$2 ?? expense,
+        );
+      }
+      final offset = day.difference(monday).inDays;
+      if (offset >= 0 && offset < 7) {
+        week[offset] += amount;
+      } else if (day.difference(lastMonday).inDays >= 0 && offset < 0) {
+        previousWeekTotal += amount;
+      }
+    }
+    todayIndex = today.weekday - 1;
+    monthName = '${_monthNames[today.month - 1]} ${today.year}';
+  }
+
+  final double monthlyBudget;
+  double monthTotal = 0;
+  double previousMonthTotal = 0;
+  double previousWeekTotal = 0;
+  final List<double> week = List.filled(7, 0);
+  final Map<String, (double, ExpenseItem)> _categories = {};
+  late final int todayIndex;
+  late final String monthName;
+
+  /// Budget warning shown in notifications, or null when nothing needs attention.
+  String? get alert => remaining < 0
+      ? 'You are over your monthly budget'
+      : usedRatio >= .8
+      ? 'You have used ${(usedRatio * 100).round()}% of your monthly budget'
+      : null;
+
+  double get weekTotal => week.fold(0, (a, b) => a + b);
+  double get remaining => monthlyBudget - monthTotal;
+  double get usedRatio => (monthTotal / monthlyBudget).clamp(0, 1);
+
+  /// Percent change against the previous period, or null with no baseline.
+  static double? change(double current, double previous) =>
+      previous > 0 ? (current - previous) / previous * 100 : null;
+
+  List<(String, double, ExpenseItem)> get topCategories {
+    final list =
+        _categories.entries.map((e) => (e.key, e.value.$1, e.value.$2)).toList()
+          ..sort((a, b) => b.$2.compareTo(a.$2));
+    return list.take(3).toList();
+  }
+}
+
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
     super.key,
     required this.expenses,
@@ -19,7 +118,17 @@ class DashboardScreen extends StatelessWidget {
   final VoidCallback onAddExpense;
 
   @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  List<ExpenseItem> get expenses => widget.expenses;
+
+  @override
   Widget build(BuildContext context) {
+    final store = FinoraScope.of(context);
+    final stats = DashboardStats(expenses, monthlyBudget: store.monthlyBudget);
+    final alert = stats.alert;
     return CustomScrollView(
       slivers: [
         SliverPadding(
@@ -27,18 +136,30 @@ class DashboardScreen extends StatelessWidget {
           sliver: SliverList(
             delegate: SliverChildListDelegate([
               _HomeHeader(
+                name: store.name,
+                initials: store.initials,
+                photo: store.photo,
+                hasAlert: alert != null,
                 onProfile: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) => ProfileScreen(expenses: expenses),
                   ),
                 ),
                 onNotifications: () =>
-                    showMessage(context, 'You are all caught up'),
+                    showMessage(context, alert ?? 'You are all caught up'),
               ),
               const SizedBox(height: 22),
-              const MonthSelector(),
+              MonthSelector(
+                label: stats.monthName,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => MonthlyReportsScreen(expenses: expenses),
+                  ),
+                ),
+              ),
               const SizedBox(height: 14),
               BalanceCard(
+                stats: stats,
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => const BudgetOverviewScreen(),
@@ -49,10 +170,14 @@ class DashboardScreen extends StatelessWidget {
               SectionHeader(
                 title: 'Spending overview',
                 action: 'This week',
-                onTap: () => showMessage(context, 'Weekly view selected'),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => MonthlyReportsScreen(expenses: expenses),
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
-              const SpendingChart(),
+              SpendingChart(stats: stats),
               const SizedBox(height: 24),
               SectionHeader(
                 title: 'Where your money goes',
@@ -64,7 +189,7 @@ class DashboardScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              const CategoryBreakdown(),
+              CategoryBreakdown(stats: stats),
               const SizedBox(height: 24),
               SectionHeader(
                 title: 'Recent transactions',
@@ -85,11 +210,9 @@ class DashboardScreen extends StatelessWidget {
                         MaterialPageRoute(
                           builder: (_) => ExpenseDetailsScreen(
                             expense: expense,
-                            onUpdated: (updated) {
-                              final index = expenses.indexOf(expense);
-                              if (index >= 0) expenses[index] = updated;
-                            },
-                            onDeleted: () => expenses.remove(expense),
+                            onUpdated: (updated) =>
+                                store.replaceExpense(expense, updated),
+                            onDeleted: () => store.removeExpense(expense),
                           ),
                         ),
                       ),
@@ -103,8 +226,26 @@ class DashboardScreen extends StatelessWidget {
   }
 }
 
+String _greeting(int hour) => hour < 12
+    ? 'Good morning'
+    : hour < 17
+    ? 'Good afternoon'
+    : 'Good evening';
+
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({required this.onNotifications, required this.onProfile});
+  const _HomeHeader({
+    required this.name,
+    required this.initials,
+    required this.photo,
+    required this.hasAlert,
+    required this.onNotifications,
+    required this.onProfile,
+  });
+
+  final String name;
+  final String initials;
+  final Uint8List? photo;
+  final bool hasAlert;
 
   final VoidCallback onNotifications;
   final VoidCallback onProfile;
@@ -117,28 +258,36 @@ class _HomeHeader extends StatelessWidget {
           tooltip: 'Open profile',
           onPressed: onProfile,
           padding: EdgeInsets.zero,
-          icon: const CircleAvatar(
+          icon: CircleAvatar(
             radius: 23,
-            backgroundColor: Color(0xFFDCEBFF),
-            child: Text(
-              'AS',
-              style: TextStyle(color: navy, fontWeight: FontWeight.w800),
-            ),
+            backgroundColor: const Color(0xFFDCEBFF),
+            backgroundImage: photo == null ? null : MemoryImage(photo!),
+            child: photo != null
+                ? null
+                : Text(
+                    initials,
+                    style: const TextStyle(
+                      color: navy,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
           ),
         ),
         const SizedBox(width: 12),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Good morning,',
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                '${_greeting(DateTime.now().hour)},',
+                style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
               ),
-              SizedBox(height: 2),
+              const SizedBox(height: 2),
               Text(
-                'Alex Silva',
-                style: TextStyle(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
                   color: navy,
                   fontSize: 19,
                   fontWeight: FontWeight.w800,
@@ -150,10 +299,11 @@ class _HomeHeader extends StatelessWidget {
         IconButton(
           onPressed: onNotifications,
           style: IconButton.styleFrom(backgroundColor: Colors.white),
-          icon: const Badge(
+          icon: Badge(
+            isLabelVisible: hasAlert,
             smallSize: 7,
             backgroundColor: coral,
-            child: Icon(Icons.notifications_none_rounded, color: navy),
+            child: const Icon(Icons.notifications_none_rounded, color: navy),
           ),
         ),
       ],
@@ -162,36 +312,96 @@ class _HomeHeader extends StatelessWidget {
 }
 
 class MonthSelector extends StatelessWidget {
-  const MonthSelector({super.key});
+  const MonthSelector({super.key, required this.label, this.onTap});
+
+  final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text('October 2026', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(width: 4),
-        const Icon(Icons.keyboard_arrow_down_rounded, color: navy, size: 20),
-        const Spacer(),
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Row(
+        children: [
+          Text(label, style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(width: 4),
+          const Icon(Icons.keyboard_arrow_down_rounded, color: navy, size: 20),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.calendar_today_outlined,
+              size: 18,
+              color: navy,
+            ),
           ),
-          child: const Icon(
-            Icons.calendar_today_outlined,
-            size: 18,
-            color: navy,
+        ],
+      ),
+    );
+  }
+}
+
+class _ChangeBadge extends StatelessWidget {
+  const _ChangeBadge({
+    required this.percent,
+    required this.background,
+    required this.upColor,
+    required this.downColor,
+    this.showIcon = false,
+  });
+
+  final double? percent;
+  final Color background;
+  final Color upColor;
+  final Color downColor;
+  final bool showIcon;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = percent;
+    if (value == null) return const SizedBox.shrink();
+    final up = value > 0;
+    final color = up ? upColor : downColor;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (showIcon) ...[
+            Icon(
+              up ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+              color: color,
+              size: 14,
+            ),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            '${up ? '+' : ''}${value.toStringAsFixed(1)}%',
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
 class BalanceCard extends StatelessWidget {
-  const BalanceCard({super.key, this.onTap});
+  const BalanceCard({super.key, required this.stats, this.onTap});
 
+  final DashboardStats stats;
   final VoidCallback? onTap;
 
   @override
@@ -227,40 +437,22 @@ class BalanceCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 5,
+                _ChangeBadge(
+                  percent: DashboardStats.change(
+                    stats.monthTotal,
+                    stats.previousMonthTotal,
                   ),
-                  decoration: BoxDecoration(
-                    color: const Color(0x2234D399),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(
-                        Icons.trending_down_rounded,
-                        color: Color(0xFF6EE7B7),
-                        size: 14,
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        '8.4%',
-                        style: TextStyle(
-                          color: Color(0xFF6EE7B7),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
+                  background: const Color(0x2234D399),
+                  upColor: const Color(0xFFFCA5A5),
+                  downColor: const Color(0xFF6EE7B7),
+                  showIcon: true,
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Rs. 45,000.00',
-              style: TextStyle(
+            Text(
+              _rs(stats.monthTotal),
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
@@ -275,9 +467,9 @@ class BalanceCard extends StatelessWidget {
                   style: TextStyle(color: Color(0xFFB4C0D4), fontSize: 12),
                 ),
                 const Spacer(),
-                const Text(
-                  'Rs. 75,000',
-                  style: TextStyle(
+                Text(
+                  _rs(stats.monthlyBudget).replaceAll('.00', ''),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -288,18 +480,24 @@ class BalanceCard extends StatelessWidget {
             const SizedBox(height: 9),
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: const LinearProgressIndicator(
-                value: .6,
+              child: LinearProgressIndicator(
+                value: stats.usedRatio,
                 minHeight: 8,
-                backgroundColor: Color(0x335B6B87),
-                valueColor: AlwaysStoppedAnimation(emerald),
+                backgroundColor: const Color(0x335B6B87),
+                valueColor: AlwaysStoppedAnimation(
+                  stats.remaining < 0 ? coral : emerald,
+                ),
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Rs. 30,000.00 remaining',
+            Text(
+              stats.remaining < 0
+                  ? '${_rs(-stats.remaining)} over budget'
+                  : '${_rs(stats.remaining)} remaining',
               style: TextStyle(
-                color: Color(0xFF9FE8C8),
+                color: stats.remaining < 0
+                    ? const Color(0xFFFCA5A5)
+                    : const Color(0xFF9FE8C8),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -312,11 +510,17 @@ class BalanceCard extends StatelessWidget {
 }
 
 class SpendingChart extends StatelessWidget {
-  const SpendingChart({super.key});
+  const SpendingChart({super.key, required this.stats});
+
+  final DashboardStats stats;
 
   @override
   Widget build(BuildContext context) {
-    const values = [0.35, 0.62, 0.45, 0.82, 0.54, 0.72, 0.28];
+    final peak = stats.week.fold<double>(0, (a, b) => a > b ? a : b);
+    final values = [
+      for (final v in stats.week)
+        peak == 0 ? 0.04 : (v / peak).clamp(0.04, 1.0),
+    ];
     const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     return Card(
       elevation: 0,
@@ -329,9 +533,9 @@ class SpendingChart extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Text(
-                  'Rs. 12,480',
-                  style: TextStyle(
+                Text(
+                  _rs(stats.weekTotal).replaceAll('.00', ''),
+                  style: const TextStyle(
                     color: navy,
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -343,23 +547,14 @@ class SpendingChart extends StatelessWidget {
                   style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
                 ),
                 const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 5,
+                _ChangeBadge(
+                  percent: DashboardStats.change(
+                    stats.weekTotal,
+                    stats.previousWeekTotal,
                   ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEAFBF5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    '+12.5%',
-                    style: TextStyle(
-                      color: Color(0xFF059669),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  background: const Color(0xFFF1F5F9),
+                  upColor: const Color(0xFFDC2626),
+                  downColor: const Color(0xFF059669),
                 ),
               ],
             ),
@@ -370,7 +565,7 @@ class SpendingChart extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: List.generate(values.length, (index) {
-                  final selected = index == 4;
+                  final selected = index == stats.todayIndex;
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -404,10 +599,13 @@ class SpendingChart extends StatelessWidget {
 }
 
 class CategoryBreakdown extends StatelessWidget {
-  const CategoryBreakdown({super.key});
+  const CategoryBreakdown({super.key, required this.stats});
+
+  final DashboardStats stats;
 
   @override
   Widget build(BuildContext context) {
+    final top = stats.topCategories;
     return Card(
       elevation: 0,
       margin: EdgeInsets.zero,
@@ -415,36 +613,33 @@ class CategoryBreakdown extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: const [
-            CategoryProgress(
-              icon: Icons.restaurant_rounded,
-              color: Color(0xFFFFE7D6),
-              iconColor: Color(0xFFF97316),
-              title: 'Food & Dining',
-              amount: 'Rs. 18,240',
-              percent: 0.72,
-            ),
-            SizedBox(height: 14),
-            CategoryProgress(
-              icon: Icons.directions_car_filled_rounded,
-              color: Color(0xFFE8F3FF),
-              iconColor: Color(0xFF3B82F6),
-              title: 'Transport',
-              amount: 'Rs. 9,850',
-              percent: 0.48,
-            ),
-            SizedBox(height: 14),
-            CategoryProgress(
-              icon: Icons.shopping_bag_rounded,
-              color: Color(0xFFF3E8FF),
-              iconColor: Color(0xFFA855F7),
-              title: 'Shopping',
-              amount: 'Rs. 7,460',
-              percent: 0.34,
-            ),
-          ],
-        ),
+        child: top.isEmpty
+            ? const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Center(
+                  child: Text(
+                    'No spending recorded this month',
+                    style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                  ),
+                ),
+              )
+            : Column(
+                children: [
+                  for (var i = 0; i < top.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 14),
+                    CategoryProgress(
+                      icon: top[i].$3.icon,
+                      color: top[i].$3.background,
+                      iconColor: top[i].$3.iconColor,
+                      title: top[i].$1,
+                      amount: _rs(top[i].$2).replaceAll('.00', ''),
+                      percent: stats.monthTotal == 0
+                          ? 0
+                          : top[i].$2 / stats.monthTotal,
+                    ),
+                  ],
+                ],
+              ),
       ),
     );
   }

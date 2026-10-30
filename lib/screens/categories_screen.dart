@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'expense_model.dart';
+import 'finora_store.dart';
 import 'finora_theme.dart';
+import 'monthly_reports_screen.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key, required this.expenses});
@@ -13,69 +15,19 @@ class CategoriesScreen extends StatefulWidget {
 }
 
 class _CategoriesScreenState extends State<CategoriesScreen> {
-  final List<_ManagedCategory> _categories = [
-    _ManagedCategory(
-      name: 'Food',
-      icon: Icons.restaurant_rounded,
-      color: Color(0xFFF97316),
-      background: Color(0xFFFFE7D6),
-      total: 18240,
-    ),
-    _ManagedCategory(
-      name: 'Transport',
-      icon: Icons.directions_car_filled_rounded,
-      color: Color(0xFF3B82F6),
-      background: paleBlue,
-      total: 9850,
-    ),
-    _ManagedCategory(
-      name: 'Shopping',
-      icon: Icons.shopping_bag_rounded,
-      color: Color(0xFFA855F7),
-      background: Color(0xFFF3E8FF),
-      total: 7460,
-    ),
-    _ManagedCategory(
-      name: 'Bills',
-      icon: Icons.receipt_long_rounded,
-      color: amber,
-      background: Color(0xFFFFF4D6),
-      total: 11200,
-    ),
-    _ManagedCategory(
-      name: 'Education',
-      icon: Icons.school_rounded,
-      color: Color(0xFF6366F1),
-      background: Color(0xFFE0E7FF),
-      total: 4200,
-    ),
-    _ManagedCategory(
-      name: 'Health',
-      icon: Icons.favorite_rounded,
-      color: coral,
-      background: Color(0xFFFFE4E6),
-      total: 2800,
-    ),
-    _ManagedCategory(
-      name: 'Entertainment',
-      icon: Icons.movie_rounded,
-      color: Color(0xFF7C3AED),
-      background: Color(0xFFEDE9FE),
-      total: 3650,
-    ),
-    _ManagedCategory(
-      name: 'Other',
-      icon: Icons.more_horiz_rounded,
-      color: Color(0xFF64748B),
-      background: Color(0xFFF1F5F9),
-      total: 1200,
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
+    final store = FinoraScope.of(context);
+    final categories = store.categories;
+    final spentByCategory = {
+      for (final e in MonthlyReportData(
+        widget.expenses,
+        DateTime(DateTime.now().year, DateTime.now().month),
+      ).categories.entries)
+        e.key.toLowerCase(): e.value,
+    };
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
@@ -130,7 +82,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: _categories.length,
+              itemCount: categories.length,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 crossAxisSpacing: 12,
@@ -138,9 +90,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 childAspectRatio: 1.15,
               ),
               itemBuilder: (context, index) {
-                final category = _categories[index];
+                final category = categories[index];
                 return _CategoryCard(
                   category: category,
+                  spent: spentByCategory[category.name.toLowerCase()] ?? 0,
                   onEdit: () =>
                       _openCategoryEditor(context, category: category),
                   onDelete: () => _confirmDelete(context, category),
@@ -155,23 +108,28 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   Future<void> _openCategoryEditor(
     BuildContext context, {
-    _ManagedCategory? category,
+    AppCategory? category,
   }) async {
-    final result = await showDialog<_ManagedCategory>(
+    final store = FinoraScope.of(context);
+    final result = await showDialog<AppCategory>(
       context: context,
       builder: (_) => _CategoryEditorDialog(category: category),
     );
     if (result == null) return;
     if (!context.mounted) return;
 
-    setState(() {
-      if (category == null) {
-        _categories.add(result);
-      } else {
-        final index = _categories.indexOf(category);
-        _categories[index] = result;
-      }
-    });
+    final duplicate = store.categories.any(
+      (c) => c != category && sameCategory(c.name, result.name),
+    );
+    if (duplicate) {
+      showMessage(context, '${result.name} already exists');
+      return;
+    }
+    if (category == null) {
+      store.addCategory(result);
+    } else {
+      store.updateCategory(category, result);
+    }
     showMessage(
       context,
       category == null ? 'Category added' : 'Category updated',
@@ -180,14 +138,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   Future<void> _confirmDelete(
     BuildContext context,
-    _ManagedCategory category,
+    AppCategory category,
   ) async {
-    final hasExpenses = widget.expenses.any(
-      (expense) => expense.category.toLowerCase().startsWith(
-        category.name.toLowerCase(),
-      ),
-    );
-    if (hasExpenses) {
+    final store = FinoraScope.of(context);
+    if (store.hasExpensesIn(category.name)) {
       showMessage(
         context,
         '${category.name} has existing expenses. Move them before deleting.',
@@ -216,7 +170,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       ),
     );
     if (confirmed != true || !context.mounted) return;
-    setState(() => _categories.remove(category));
+    store.removeCategory(category);
     showMessage(context, 'Category deleted');
   }
 }
@@ -224,11 +178,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 class _CategoryCard extends StatelessWidget {
   const _CategoryCard({
     required this.category,
+    required this.spent,
     required this.onEdit,
     required this.onDelete,
   });
 
-  final _ManagedCategory category;
+  final AppCategory category;
+  final double spent;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -291,7 +247,7 @@ class _CategoryCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'LKR ${category.total.toStringAsFixed(2)} spent',
+              'LKR ${spent.toStringAsFixed(2)} this month',
               style: TextStyle(
                 color: dark
                     ? theme.colorScheme.onSurfaceVariant
@@ -310,7 +266,7 @@ class _CategoryCard extends StatelessWidget {
 class _CategoryEditorDialog extends StatefulWidget {
   const _CategoryEditorDialog({this.category});
 
-  final _ManagedCategory? category;
+  final AppCategory? category;
 
   @override
   State<_CategoryEditorDialog> createState() => _CategoryEditorDialogState();
@@ -474,13 +430,7 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
             if (name.isEmpty) return;
             Navigator.pop(
               context,
-              _ManagedCategory(
-                name: name,
-                icon: _icon,
-                color: _color,
-                background: _background,
-                total: widget.category?.total ?? 0,
-              ),
+              AppCategory(name, _icon, _color, _background),
             );
           },
           style: FilledButton.styleFrom(backgroundColor: navy),
@@ -489,20 +439,4 @@ class _CategoryEditorDialogState extends State<_CategoryEditorDialog> {
       ],
     );
   }
-}
-
-class _ManagedCategory {
-  _ManagedCategory({
-    required this.name,
-    required this.icon,
-    required this.color,
-    required this.background,
-    required this.total,
-  });
-
-  final String name;
-  final IconData icon;
-  final Color color;
-  final Color background;
-  final double total;
 }

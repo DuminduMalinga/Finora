@@ -2,64 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'expense_model.dart';
+import 'finora_store.dart';
 import 'finora_theme.dart';
-
-class _Category {
-  const _Category(this.name, this.icon, this.color, this.background);
-
-  final String name;
-  final IconData icon;
-  final Color color;
-  final Color background;
-}
-
-const _categories = [
-  _Category(
-    'Food',
-    Icons.restaurant_rounded,
-    Color(0xFFF97316),
-    Color(0xFFFFE7D6),
-  ),
-  _Category(
-    'Transport',
-    Icons.directions_car_filled_rounded,
-    Color(0xFF3B82F6),
-    paleBlue,
-  ),
-  _Category(
-    'Shopping',
-    Icons.shopping_bag_rounded,
-    Color(0xFFA855F7),
-    Color(0xFFF3E8FF),
-  ),
-  _Category('Bills', Icons.receipt_long_rounded, amber, Color(0xFFFFF4D6)),
-  _Category(
-    'Education',
-    Icons.school_rounded,
-    Color(0xFF6366F1),
-    Color(0xFFE0E7FF),
-  ),
-  _Category('Health', Icons.favorite_rounded, coral, Color(0xFFFEE2E2)),
-  _Category(
-    'Entertainment',
-    Icons.movie_rounded,
-    Color(0xFFEC4899),
-    Color(0xFFFCE7F3),
-  ),
-  _Category(
-    'Other',
-    Icons.more_horiz_rounded,
-    Color(0xFF64748B),
-    Color(0xFFE2E8F0),
-  ),
-];
-
-const _paymentMethods = [
-  ('Cash', Icons.payments_rounded),
-  ('Card', Icons.credit_card_rounded),
-  ('Bank', Icons.account_balance_rounded),
-  ('Wallet', Icons.account_balance_wallet_rounded),
-];
 
 const _months = [
   'Jan',
@@ -94,8 +38,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   final _title = TextEditingController();
   final _notes = TextEditingController();
 
-  _Category? _category;
-  String _payment = 'Cash';
+  AppCategory? _category;
   DateTime _date = DateTime.now();
   bool _submitted = false;
 
@@ -164,6 +107,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         icon: category.icon,
         iconColor: category.color,
         background: category.background,
+        notes: _notes.text.trim(),
       ),
     );
     showMessage(context, 'Expense added successfully');
@@ -249,9 +193,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               const SizedBox(height: 24),
               _label('Date'),
               _dateField(),
-              const SizedBox(height: 24),
-              _label('Payment method'),
-              _paymentSelector(),
               const SizedBox(height: 24),
               _label('Notes (optional)'),
               TextFormField(
@@ -369,7 +310,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           crossAxisSpacing: 10,
           childAspectRatio: 0.82,
           children: [
-            for (final c in _categories)
+            for (final c
+                in FinoraScope.maybeOf(context)?.categories ??
+                    defaultCategories)
               _CategoryTile(
                 category: c,
                 selected: _category == c,
@@ -423,38 +366,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       ),
     );
   }
-
-  Widget _paymentSelector() {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: [
-        for (final (name, icon) in _paymentMethods)
-          ChoiceChip(
-            avatar: Icon(
-              icon,
-              size: 18,
-              color: _payment == name ? Colors.white : navy,
-            ),
-            label: Text(name),
-            selected: _payment == name,
-            showCheckmark: false,
-            onSelected: (_) => setState(() => _payment = name),
-            selectedColor: navy,
-            backgroundColor: Colors.white,
-            side: BorderSide(color: _payment == name ? navy : _border),
-            labelStyle: TextStyle(
-              color: _payment == name ? Colors.white : navy,
-              fontWeight: FontWeight.w700,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-          ),
-      ],
-    );
-  }
 }
 
 class _CategoryTile extends StatelessWidget {
@@ -464,7 +375,7 @@ class _CategoryTile extends StatelessWidget {
     required this.onTap,
   });
 
-  final _Category category;
+  final AppCategory category;
   final bool selected;
   final VoidCallback onTap;
 

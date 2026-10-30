@@ -46,7 +46,7 @@ class MonthlyReportData {
       0,
     );
     for (final expense in expenses) {
-      final date = _date(expense.date, reference);
+      final date = parseDate(expense.date, reference);
       final amount = double.tryParse(
         expense.amount
             .replaceFirst(RegExp(r'^(LKR|Rs\.)\s*'), '')
@@ -83,7 +83,7 @@ class MonthlyReportData {
         return result == 0 ? a.key.compareTo(b.key) : result;
       });
 
-  static DateTime? _date(String value, DateTime today) {
+  static DateTime? parseDate(String value, DateTime today) {
     final day = DateUtils.dateOnly(today);
     if (value.startsWith('Today')) return day;
     if (value.startsWith('Yesterday')) {

@@ -1,6 +1,26 @@
 import 'package:flutter/material.dart';
 
+import 'finora_store.dart';
 import 'finora_theme.dart';
+import 'monthly_reports_screen.dart';
+
+const _monthNames = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+String _monthLabel(DateTime month) =>
+    '${_monthNames[month.month - 1]} ${month.year}';
 
 class BudgetOverviewScreen extends StatefulWidget {
   const BudgetOverviewScreen({super.key});
@@ -10,50 +30,30 @@ class BudgetOverviewScreen extends StatefulWidget {
 }
 
 class _BudgetOverviewScreenState extends State<BudgetOverviewScreen> {
-  String _month = 'October 2026';
-  double _monthlyBudget = 75000;
-
-  final List<_BudgetCategory> _categories = [
-    _BudgetCategory(
-      name: 'Food & Dining',
-      spent: 18240,
-      limit: 25000,
-      icon: Icons.restaurant_rounded,
-      color: Color(0xFFF97316),
-      background: Color(0xFFFFE7D6),
-    ),
-    _BudgetCategory(
-      name: 'Transport',
-      spent: 9850,
-      limit: 15000,
-      icon: Icons.directions_car_filled_rounded,
-      color: Color(0xFF3B82F6),
-      background: paleBlue,
-    ),
-    _BudgetCategory(
-      name: 'Shopping',
-      spent: 7460,
-      limit: 8000,
-      icon: Icons.shopping_bag_rounded,
-      color: amber,
-      background: Color(0xFFFFF4D6),
-    ),
-    _BudgetCategory(
-      name: 'Bills & Utilities',
-      spent: 11200,
-      limit: 10000,
-      icon: Icons.receipt_long_rounded,
-      color: coral,
-      background: Color(0xFFFFE4E6),
-    ),
-  ];
-
-  double get _spent => _categories.fold(0, (total, item) => total + item.spent);
-  double get _remaining => _monthlyBudget - _spent;
-  double get _usedRatio => (_spent / _monthlyBudget).clamp(0, 1).toDouble();
+  late DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
 
   @override
   Widget build(BuildContext context) {
+    final store = FinoraScope.of(context);
+    final report = MonthlyReportData(store.expenses, _month);
+    final spentByCategory = {
+      for (final e in report.categories.entries) e.key.toLowerCase(): e.value,
+    };
+    final monthlyBudget = store.monthlyBudget;
+    final spent = report.total;
+    final remaining = monthlyBudget - spent;
+    final usedRatio = (spent / monthlyBudget).clamp(0, 1).toDouble();
+    final cards = [
+      for (final category in store.categories)
+        if (store.limitFor(category.name) != null ||
+            (spentByCategory[category.name.toLowerCase()] ?? 0) > 0)
+          _CategoryBudgetCard(
+            category: category,
+            spent: spentByCategory[category.name.toLowerCase()] ?? 0,
+            limit: store.limitFor(category.name),
+            onTap: () => _openLimitEditor(context, category: category),
+          ),
+    ];
     return Scaffold(
       appBar: AppBar(
         title: const Text('Budget Overview'),
@@ -70,16 +70,19 @@ class _BudgetOverviewScreenState extends State<BudgetOverviewScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
-          _MonthSelector(month: _month, onTap: () => _selectMonth(context)),
+          _MonthSelector(
+            month: _monthLabel(_month),
+            onTap: () => _selectMonth(context),
+          ),
           const SizedBox(height: 18),
           _BudgetSummary(
-            monthlyBudget: _monthlyBudget,
-            spent: _spent,
-            remaining: _remaining,
-            usedRatio: _usedRatio,
+            monthlyBudget: monthlyBudget,
+            spent: spent,
+            remaining: remaining,
+            usedRatio: usedRatio,
           ),
           const SizedBox(height: 20),
-          _BudgetAlert(remaining: _remaining, usedRatio: _usedRatio),
+          _BudgetAlert(remaining: remaining, usedRatio: usedRatio),
           const SizedBox(height: 24),
           Row(
             children: [
@@ -94,7 +97,7 @@ class _BudgetOverviewScreenState extends State<BudgetOverviewScreen> {
                 ),
               ),
               TextButton.icon(
-                onPressed: () => _openBudgetEditor(context),
+                onPressed: () => _openLimitEditor(context),
                 icon: const Icon(Icons.add_rounded, size: 18),
                 label: const Text('Add budget'),
                 style: TextButton.styleFrom(foregroundColor: emerald),
@@ -102,19 +105,31 @@ class _BudgetOverviewScreenState extends State<BudgetOverviewScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          ..._categories.map(
-            (category) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _CategoryBudgetCard(category: category),
-            ),
-          ),
+          if (cards.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  'No spending or category limits for this month yet.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                ),
+              ),
+            )
+          else
+            for (final card in cards)
+              Padding(padding: const EdgeInsets.only(bottom: 12), child: card),
         ],
       ),
     );
   }
 
   Future<void> _selectMonth(BuildContext context) async {
-    final selected = await showModalBottomSheet<String>(
+    final now = DateTime.now();
+    final months = [
+      for (var i = 0; i < 6; i++) DateTime(now.year, now.month - i),
+    ];
+    final selected = await showModalBottomSheet<DateTime>(
       context: context,
       showDragHandle: true,
       builder: (context) => SafeArea(
@@ -131,16 +146,15 @@ class _BudgetOverviewScreenState extends State<BudgetOverviewScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            ...['October 2026', 'September 2026', 'August 2026'].map(
-              (month) => ListTile(
+            for (final month in months)
+              ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(month),
+                title: Text(_monthLabel(month)),
                 trailing: month == _month
                     ? const Icon(Icons.check_rounded, color: emerald)
                     : null,
                 onTap: () => Navigator.pop(context, month),
               ),
-            ),
           ],
         ),
       ),
@@ -149,77 +163,269 @@ class _BudgetOverviewScreenState extends State<BudgetOverviewScreen> {
   }
 
   Future<void> _openBudgetEditor(BuildContext context) async {
-    final controller = TextEditingController(
-      text: _monthlyBudget.toStringAsFixed(0),
-    );
-    final formKey = GlobalKey<FormState>();
-    final updatedBudget = await showModalBottomSheet<double>(
+    final store = FinoraScope.of(context);
+    final updated = await showModalBottomSheet<double>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (context) => Padding(
-        padding: EdgeInsets.fromLTRB(
-          20,
-          4,
-          20,
-          MediaQuery.viewInsetsOf(context).bottom + 24,
-        ),
-        child: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Edit monthly budget',
-                style: TextStyle(
-                  color: navy,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
+      builder: (_) => _AmountSheet(
+        title: 'Edit monthly budget',
+        label: 'Monthly limit',
+        invalid: 'Enter a valid budget',
+        action: 'Save budget',
+        initial: store.monthlyBudget.toStringAsFixed(0),
+      ),
+    );
+    if (updated != null) store.setMonthlyBudget(updated);
+  }
+
+  /// Sets (or clears) the monthly spending limit of one category.
+  Future<void> _openLimitEditor(
+    BuildContext context, {
+    AppCategory? category,
+  }) async {
+    final store = FinoraScope.of(context);
+    final result = await showModalBottomSheet<(String, double?)>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => _LimitSheet(
+        categories: store.categories,
+        initial: category ?? store.categories.first,
+        fixed: category != null,
+        currentLimit: store.limitFor,
+      ),
+    );
+    if (result != null) store.setCategoryLimit(result.$1, result.$2);
+  }
+}
+
+class _AmountSheet extends StatefulWidget {
+  const _AmountSheet({
+    required this.title,
+    required this.label,
+    required this.invalid,
+    required this.action,
+    this.initial,
+  });
+
+  final String title;
+  final String label;
+  final String invalid;
+  final String action;
+  final String? initial;
+
+  @override
+  State<_AmountSheet> createState() => _AmountSheetState();
+}
+
+class _AmountSheetState extends State<_AmountSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final _controller = TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        4,
+        20,
+        MediaQuery.viewInsetsOf(context).bottom + 24,
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.title,
+              style: const TextStyle(
+                color: navy,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: controller,
-                autofocus: true,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Monthly limit',
-                  prefixText: 'LKR ',
-                ),
-                validator: (value) {
-                  final amount = double.tryParse(value ?? '');
-                  if (amount == null || amount <= 0) {
-                    return 'Enter a valid budget';
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _controller,
+              autofocus: true,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: InputDecoration(
+                labelText: widget.label,
+                prefixText: 'LKR ',
+              ),
+              validator: (value) {
+                final amount = double.tryParse(
+                  (value ?? '').replaceAll(',', ''),
+                );
+                if (amount == null || !amount.isFinite || amount <= 0) {
+                  return widget.invalid;
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    Navigator.pop(
+                      context,
+                      double.parse(_controller.text.replaceAll(',', '')),
+                    );
                   }
-                  return null;
                 },
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () {
-                    if (formKey.currentState!.validate()) {
-                      Navigator.pop(context, double.parse(controller.text));
-                    }
-                  },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: navy,
-                    minimumSize: const Size.fromHeight(52),
-                  ),
-                  child: const Text('Save budget'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: navy,
+                  minimumSize: const Size.fromHeight(52),
                 ),
+                child: Text(widget.action),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
-    controller.dispose();
-    if (updatedBudget != null) setState(() => _monthlyBudget = updatedBudget);
+  }
+}
+
+class _LimitSheet extends StatefulWidget {
+  const _LimitSheet({
+    required this.categories,
+    required this.initial,
+    required this.fixed,
+    required this.currentLimit,
+  });
+
+  final List<AppCategory> categories;
+  final AppCategory initial;
+  final bool fixed;
+  final double? Function(String name) currentLimit;
+
+  @override
+  State<_LimitSheet> createState() => _LimitSheetState();
+}
+
+class _LimitSheetState extends State<_LimitSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _controller;
+  late AppCategory _category = widget.initial;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: _text(_category));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  String _text(AppCategory category) {
+    final limit = widget.currentLimit(category.name);
+    return limit == null ? '' : limit.toStringAsFixed(0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        4,
+        20,
+        MediaQuery.viewInsetsOf(context).bottom + 24,
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.fixed ? '${_category.name} limit' : 'Add category budget',
+              style: const TextStyle(
+                color: navy,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (!widget.fixed) ...[
+              DropdownButtonFormField<AppCategory>(
+                initialValue: _category,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Category'),
+                items: [
+                  for (final c in widget.categories)
+                    DropdownMenuItem(value: c, child: Text(c.name)),
+                ],
+                onChanged: (value) => setState(() {
+                  _category = value!;
+                  _controller.text = _text(_category);
+                }),
+              ),
+              const SizedBox(height: 16),
+            ],
+            TextFormField(
+              controller: _controller,
+              autofocus: widget.fixed,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Monthly limit',
+                prefixText: 'LKR ',
+              ),
+              validator: (value) {
+                final amount = double.tryParse(
+                  (value ?? '').replaceAll(',', ''),
+                );
+                if (amount == null || !amount.isFinite || amount <= 0) {
+                  return 'Enter a valid limit';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    Navigator.pop(context, (
+                      _category.name,
+                      double.parse(_controller.text.replaceAll(',', '')),
+                    ));
+                  }
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: navy,
+                  minimumSize: const Size.fromHeight(52),
+                ),
+                child: const Text('Save limit'),
+              ),
+            ),
+            if (widget.currentLimit(_category.name) != null)
+              TextButton(
+                onPressed: () => Navigator.pop(context, (_category.name, null)),
+                child: const Text('Remove limit'),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -456,13 +662,22 @@ class _BudgetAlert extends StatelessWidget {
 }
 
 class _CategoryBudgetCard extends StatelessWidget {
-  const _CategoryBudgetCard({required this.category});
+  const _CategoryBudgetCard({
+    required this.category,
+    required this.spent,
+    required this.limit,
+    required this.onTap,
+  });
 
-  final _BudgetCategory category;
+  final AppCategory category;
+  final double spent;
+  final double? limit;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final ratio = category.spent / category.limit;
+    final limit = this.limit;
+    final ratio = limit == null ? 0.0 : spent / limit;
     final exceeded = ratio > 1;
     final approaching = !exceeded && ratio >= .8;
     final statusColor = exceeded
@@ -471,107 +686,97 @@ class _CategoryBudgetCard extends StatelessWidget {
         ? amber
         : emerald;
     final percent = (ratio * 100).round();
-    final remaining = category.limit - category.spent;
+    final remaining = (limit ?? 0) - spent;
     return Card(
       elevation: 0,
       color: Colors.white,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: category.background,
-                    borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: category.background,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(category.icon, color: category.color, size: 20),
                   ),
-                  child: Icon(category.icon, color: category.color, size: 20),
-                ),
-                const SizedBox(width: 11),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        category.name,
-                        style: const TextStyle(
-                          color: navy,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          category.name,
+                          style: const TextStyle(
+                            color: navy,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'LKR ${_formatAmount(category.spent)} of LKR ${_formatAmount(category.limit)}',
-                        style: const TextStyle(
-                          color: Color(0xFF94A3B8),
-                          fontSize: 11,
+                        const SizedBox(height: 3),
+                        Text(
+                          limit == null
+                              ? 'LKR ${_formatAmount(spent)} spent • No limit set'
+                              : 'LKR ${_formatAmount(spent)} of LKR ${_formatAmount(limit)}',
+                          style: const TextStyle(
+                            color: Color(0xFF94A3B8),
+                            fontSize: 11,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  Text(
+                    limit == null ? 'Set limit' : '$percent%',
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(5),
+                child: LinearProgressIndicator(
+                  value: ratio.clamp(0, 1).toDouble(),
+                  minHeight: 7,
+                  backgroundColor: const Color(0xFFF1F5F9),
+                  valueColor: AlwaysStoppedAnimation(statusColor),
                 ),
-                Text(
-                  '$percent%',
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  limit == null
+                      ? 'Tap to set a monthly limit'
+                      : exceeded
+                      ? 'LKR ${_formatAmount(remaining.abs())} over limit'
+                      : 'LKR ${_formatAmount(remaining)} remaining',
                   style: TextStyle(
                     color: statusColor,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(5),
-              child: LinearProgressIndicator(
-                value: ratio.clamp(0, 1).toDouble(),
-                minHeight: 7,
-                backgroundColor: const Color(0xFFF1F5F9),
-                valueColor: AlwaysStoppedAnimation(statusColor),
               ),
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                exceeded
-                    ? 'LKR ${_formatAmount(remaining.abs())} over limit'
-                    : 'LKR ${_formatAmount(remaining)} remaining',
-                style: TextStyle(
-                  color: statusColor,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
-}
-
-class _BudgetCategory {
-  const _BudgetCategory({
-    required this.name,
-    required this.spent,
-    required this.limit,
-    required this.icon,
-    required this.color,
-    required this.background,
-  });
-
-  final String name;
-  final double spent;
-  final double limit;
-  final IconData icon;
-  final Color color;
-  final Color background;
 }
 
 String _formatAmount(double amount) => amount.toStringAsFixed(2);

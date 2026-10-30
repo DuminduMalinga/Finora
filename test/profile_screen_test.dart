@@ -20,12 +20,6 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(const MyApp());
-    await tester.runAsync(
-      () => precacheImage(
-        const AssetImage('assets/images/alex_morgan.jpg'),
-        tester.element(find.byType(MyApp)),
-      ),
-    );
     await tester.tap(find.byTooltip('Open profile'));
     await tester.pumpAndSettle();
   }

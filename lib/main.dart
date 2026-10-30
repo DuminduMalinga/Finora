@@ -4,7 +4,7 @@ import 'screens/add_expense_screen.dart';
 import 'screens/budget_overview_screen.dart';
 import 'screens/categories_screen.dart';
 import 'screens/dashboard_screen.dart';
-import 'screens/expense_model.dart';
+import 'screens/finora_store.dart';
 import 'screens/finora_theme.dart';
 import 'screens/monthly_reports_screen.dart';
 import 'screens/settings_preferences.dart';
@@ -23,10 +23,12 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final _settings = SettingsPreferences();
+  final _store = FinoraStore();
 
   @override
   void dispose() {
     _settings.dispose();
+    _store.dispose();
     super.dispose();
   }
 
@@ -34,25 +36,28 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: _settings,
-      builder: (context, _) => MaterialApp(
-        title: 'Spendly',
-        debugShowCheckedModeBanner: false,
-        theme: FinoraTheme.theme.copyWith(
-          colorScheme: FinoraTheme.theme.colorScheme.copyWith(
-            secondary: _settings.accent,
+      builder: (context, _) => FinoraScope(
+        store: _store,
+        child: MaterialApp(
+          title: 'Spendly',
+          debugShowCheckedModeBanner: false,
+          theme: FinoraTheme.theme.copyWith(
+            colorScheme: FinoraTheme.theme.colorScheme.copyWith(
+              secondary: _settings.accent,
+            ),
           ),
-        ),
-        darkTheme: ThemeData(
-          useMaterial3: true,
-          brightness: Brightness.dark,
-          fontFamily: 'Inter',
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: navy,
+          darkTheme: ThemeData(
+            useMaterial3: true,
             brightness: Brightness.dark,
-          ).copyWith(secondary: _settings.accent),
+            fontFamily: 'Inter',
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: navy,
+              brightness: Brightness.dark,
+            ).copyWith(secondary: _settings.accent),
+          ),
+          themeMode: _settings.themeMode,
+          home: HomePage(settings: _settings),
         ),
-        themeMode: _settings.themeMode,
-        home: HomePage(settings: _settings),
       ),
     );
   }
@@ -67,41 +72,38 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final List<ExpenseItem> _expenses = List.of(sampleExpenses);
   int _selectedIndex = 0;
 
   void _openAddExpense() {
+    final store = FinoraScope.of(context);
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => AddExpenseScreen(
-          onSaved: (expense) => setState(() => _expenses.insert(0, expense)),
-        ),
+        builder: (_) => AddExpenseScreen(onSaved: store.addExpense),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final store = FinoraScope.of(context);
+    final expenses = store.expenses;
     final pages = [
-      DashboardScreen(expenses: _expenses, onAddExpense: _openAddExpense),
+      DashboardScreen(expenses: expenses, onAddExpense: _openAddExpense),
+      const BudgetOverviewScreen(),
+      CategoriesScreen(expenses: expenses),
+      MonthlyReportsScreen(expenses: expenses),
       SettingsScreen(
         preferences: widget.settings,
-        expenses: _expenses,
+        expenses: expenses,
         onBack: () => setState(() => _selectedIndex = 0),
-        onClearData: () => setState(() => _expenses.clear()),
-        onRestore: (items) => setState(() {
-          _expenses.clear();
-          _expenses.addAll(items);
-        }),
+        onClearData: () => store.replaceAllExpenses(const []),
+        onRestore: store.replaceAllExpenses,
       ),
-      const BudgetOverviewScreen(),
-      CategoriesScreen(expenses: _expenses),
-      MonthlyReportsScreen(expenses: _expenses),
     ];
 
     return Scaffold(
       body: SafeArea(child: pages[_selectedIndex]),
-      floatingActionButton: _selectedIndex == 4 || _selectedIndex == 1
+      floatingActionButton: _selectedIndex == 3 || _selectedIndex == 4
           ? null
           : FloatingActionButton.extended(
               onPressed: _openAddExpense,
@@ -122,7 +124,7 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Theme.of(context).colorScheme.surface,
         indicatorColor: Theme.of(context).brightness == Brightness.dark
             ? widget.settings.accent.withValues(alpha: 0.25)
-            : _selectedIndex == 4 || _selectedIndex == 1
+            : _selectedIndex == 3 || _selectedIndex == 4
             ? const Color(0xFFECFDF5)
             : paleBlue,
         height: 72,
@@ -131,11 +133,6 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home_rounded),
             label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings_rounded),
-            label: 'Settings',
           ),
           NavigationDestination(
             icon: Icon(Icons.account_balance_wallet_outlined),
@@ -151,6 +148,11 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.bar_chart_outlined),
             selectedIcon: Icon(Icons.bar_chart_rounded),
             label: 'Reports',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings_rounded),
+            label: 'Settings',
           ),
         ],
       ),

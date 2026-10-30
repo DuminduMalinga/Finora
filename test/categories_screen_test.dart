@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:finora/main.dart';
 import 'package:finora/screens/categories_screen.dart';
 import 'package:finora/screens/expense_model.dart';
+import 'package:finora/screens/finora_store.dart';
 import 'package:finora/screens/finora_theme.dart';
 
 void main() {
@@ -64,13 +65,16 @@ void main() {
   testWidgets('Categories remains readable in dark mode', (tester) async {
     phone(tester);
     await tester.pumpWidget(
-      MaterialApp(
-        theme: ThemeData(
-          brightness: Brightness.dark,
-          useMaterial3: true,
-          fontFamily: 'Inter',
+      FinoraScope(
+        store: FinoraStore(expenses: List.of(sampleExpenses)),
+        child: MaterialApp(
+          theme: ThemeData(
+            brightness: Brightness.dark,
+            useMaterial3: true,
+            fontFamily: 'Inter',
+          ),
+          home: const CategoriesScreen(expenses: sampleExpenses),
         ),
-        home: const CategoriesScreen(expenses: sampleExpenses),
       ),
     );
     await tester.pumpAndSettle();

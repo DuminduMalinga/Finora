@@ -1,26 +1,46 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'budget_overview_screen.dart';
 import 'categories_screen.dart';
 import 'expense_model.dart';
+import 'dashboard_screen.dart';
+import 'finora_store.dart';
 import 'finora_theme.dart';
 import 'monthly_reports_screen.dart';
 
 const _gray = Color(0xFFF5F7FA);
 const _subtle = Color(0xFF64748B);
 
+/// Returns the bytes of a photo from [source], or null if none was chosen.
+typedef PhotoPicker = Future<Uint8List?> Function(ImageSource source);
+
+Future<Uint8List?> _pickFromDevice(ImageSource source) async {
+  final file = await ImagePicker().pickImage(
+    source: source,
+    maxWidth: 800,
+    maxHeight: 800,
+    imageQuality: 85,
+  );
+  return file?.readAsBytes();
+}
+
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key, required this.expenses});
+  const ProfileScreen({
+    super.key,
+    required this.expenses,
+    this.pickPhoto = _pickFromDevice,
+  });
   final List<ExpenseItem> expenses;
+  final PhotoPicker pickPhoto;
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String _name = 'Alex Morgan';
-  String _email = 'alex.morgan@email.com';
-  bool _usePhoto = true;
   bool _expenseAlerts = true;
   bool _budgetAlerts = true;
   bool _monthlySummary = false;
@@ -29,8 +49,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
 
   Future<void> _editProfile() async {
-    final name = TextEditingController(text: _name);
-    final email = TextEditingController(text: _email);
+    final store = FinoraScope.of(context);
+    final name = TextEditingController(text: store.name);
+    final email = TextEditingController(text: store.email);
     final form = GlobalKey<FormState>();
     final saved = await showModalBottomSheet<bool>(
       context: context,
@@ -109,16 +130,121 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
     if (saved == true && mounted) {
-      setState(() {
-        _name = name.text.trim();
-        _email = email.text.trim();
-      });
+      store.setProfile(name.text.trim(), email.text.trim());
       showMessage(context, 'Profile updated successfully');
     }
     // The sheet's route finishes its exit animation before controllers are freed.
     await Future<void>.delayed(const Duration(milliseconds: 300));
     name.dispose();
     email.dispose();
+  }
+
+  Future<void> _pickPhoto(ImageSource source) async {
+    final store = FinoraScope.of(context);
+    try {
+      final bytes = await widget.pickPhoto(source);
+      if (bytes == null || !mounted) return;
+      store.setPhoto(bytes);
+      showMessage(context, 'Profile picture updated');
+    } catch (_) {
+      if (!mounted) return;
+      showMessage(
+        context,
+        source == ImageSource.camera
+            ? 'The camera is not available on this device'
+            : 'Could not open the gallery',
+      );
+    }
+  }
+
+  void _photoSheet() => showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Profile picture',
+              style: TextStyle(
+                color: navy,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.photo_camera_outlined, color: navy),
+              title: const Text('Take a photo'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _pickPhoto(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.photo_library_outlined, color: navy),
+              title: const Text('Choose from gallery'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _pickPhoto(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  void _savingsSheet(FinoraStore store, DashboardStats stats) {
+    final goal = store.savingsGoal;
+    final saved = stats.remaining.clamp(0, goal).toDouble();
+    final ratio = goal == 0 ? 0.0 : saved / goal;
+    _sheet(
+      'Savings Goal',
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${_lkr(saved)} of ${_lkr(goal)} saved',
+            style: const TextStyle(color: navy, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 12),
+          LinearProgressIndicator(
+            value: ratio,
+            color: emerald,
+            backgroundColor: _gray,
+            minHeight: 8,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '${(ratio * 100).round()}% reached. Saved is the part of this '
+            "month's budget you have not spent.",
+            style: const TextStyle(color: _subtle, fontSize: 12),
+          ),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final value = await showDialog<double>(
+                context: context,
+                builder: (_) => _GoalDialog(initial: goal),
+              );
+              if (value != null) store.setSavingsGoal(value);
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: navy,
+              minimumSize: const Size.fromHeight(48),
+            ),
+            child: const Text('Edit goal'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _sheet(String title, Widget content) {
@@ -189,419 +315,311 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final store = FinoraScope.of(context);
+    final stats = DashboardStats(
+      store.expenses,
+      monthlyBudget: store.monthlyBudget,
+    );
     return Scaffold(
       backgroundColor: Colors.white,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-        children: [
-          Row(
-            children: [
-              if (Navigator.of(context).canPop()) ...[
-                IconButton(
-                  tooltip: 'Back to dashboard',
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.arrow_back_rounded, color: navy),
-                ),
-                const SizedBox(width: 8),
-              ],
-              const Expanded(
-                child: Text(
-                  'My Profile',
-                  style: TextStyle(
-                    color: navy,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.7,
-                  ),
-                ),
-              ),
-              IconButton.filledTonal(
-                tooltip: 'Notifications',
-                onPressed: () => _sheet(
-                  'Notifications',
-                  const Column(
-                    children: [
-                      Icon(
-                        Icons.notifications_none_rounded,
-                        size: 40,
-                        color: emerald,
-                      ),
-                      SizedBox(height: 12),
-                      Text(
-                        'You’re all caught up',
-                        style: TextStyle(
-                          color: navy,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      SizedBox(height: 6),
-                      Text(
-                        'Your spending updates will appear here.',
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-                style: IconButton.styleFrom(
-                  backgroundColor: _gray,
-                  foregroundColor: navy,
-                ),
-                icon: const Icon(Icons.notifications_none_rounded),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _ProfileCard(
-            child: Column(
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+          children: [
+            Row(
               children: [
-                SizedBox(
-                  width: 98,
-                  height: 98,
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFFD1FAE5),
-                              width: 2,
-                            ),
-                          ),
-                          child: CircleAvatar(
-                            backgroundColor: paleBlue,
-                            backgroundImage: _usePhoto
-                                ? const AssetImage(
-                                    'assets/images/alex_morgan.jpg',
-                                  )
-                                : null,
-                            child: _usePhoto
-                                ? null
-                                : Text(
-                                    _name
-                                        .trim()
-                                        .split(RegExp(r'\s+'))
-                                        .take(2)
-                                        .map((word) => word[0])
-                                        .join()
-                                        .toUpperCase(),
-                                    style: const TextStyle(
-                                      color: navy,
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: SizedBox(
-                          width: 44,
-                          height: 44,
-                          child: IconButton(
-                            tooltip: 'Edit profile picture',
-                            style: IconButton.styleFrom(
-                              backgroundColor: emerald,
-                              foregroundColor: Colors.white,
-                              side: const BorderSide(
-                                color: Colors.white,
-                                width: 3,
-                              ),
-                            ),
-                            icon: const Icon(
-                              Icons.camera_alt_outlined,
-                              size: 19,
-                            ),
-                            onPressed: () => _sheet(
-                              'Profile picture',
-                              Column(
-                                children: [
-                                  ListTile(
-                                    leading: const Icon(
-                                      Icons.portrait_outlined,
-                                    ),
-                                    title: const Text('Use sample portrait'),
-                                    onTap: () {
-                                      setState(() => _usePhoto = true);
-                                      Navigator.pop(context);
-                                    },
-                                  ),
-                                  ListTile(
-                                    leading: const Icon(
-                                      Icons.account_circle_outlined,
-                                    ),
-                                    title: const Text('Use my initials'),
-                                    onTap: () {
-                                      setState(() => _usePhoto = false);
-                                      Navigator.pop(context);
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                if (Navigator.of(context).canPop()) ...[
+                  IconButton(
+                    tooltip: 'Back to dashboard',
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.arrow_back_rounded, color: navy),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  _name,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: navy,
-                    fontSize: 23,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _email,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: _subtle, fontSize: 13),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFECFDF5),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.verified_user_outlined,
-                        color: Color(0xFF047857),
-                        size: 14,
-                      ),
-                      SizedBox(width: 5),
-                      Text(
-                        'Personal Account',
-                        style: TextStyle(
-                          color: Color(0xFF047857),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: _editProfile,
-                    icon: const Icon(Icons.edit_outlined, size: 17),
-                    label: const Text('Edit Profile'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: navy,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size.fromHeight(46),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                  const SizedBox(width: 8),
+                ],
+                const Expanded(
+                  child: Text(
+                    'My Profile',
+                    style: TextStyle(
+                      color: navy,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.7,
                     ),
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 24),
-          const _SectionTitle('Financial Overview', trailing: 'DEMO'),
-          const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: _StatCard(
-                  icon: Icons.receipt_long_outlined,
-                  label: 'Total Expenses',
-                  amount: 'LKR 42,850',
-                  tint: navy,
-                  onTap: () =>
-                      _open(MonthlyReportsScreen(expenses: widget.expenses)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _StatCard(
-                  icon: Icons.account_balance_wallet_outlined,
-                  label: 'Monthly Budget',
-                  amount: 'LKR 75,000',
-                  tint: emerald,
-                  onTap: () => _open(const BudgetOverviewScreen()),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _StatCard(
-                  icon: Icons.savings_outlined,
-                  label: 'Savings Goal',
-                  amount: 'LKR 150,000',
-                  tint: const Color(0xFF6366F1),
-                  onTap: () => _sheet(
-                    'Savings Goal',
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 20),
+            _ProfileCard(
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: 98,
+                    height: 98,
+                    child: Stack(
                       children: [
+                        Positioned.fill(
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: const Color(0xFFD1FAE5),
+                                width: 2,
+                              ),
+                            ),
+                            child: CircleAvatar(
+                              backgroundColor: paleBlue,
+                              backgroundImage: store.photo == null
+                                  ? null
+                                  : MemoryImage(store.photo!),
+                              child: store.photo != null
+                                  ? null
+                                  : Text(
+                                      store.initials,
+                                      style: const TextStyle(
+                                        color: navy,
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: IconButton(
+                              tooltip: 'Edit profile picture',
+                              style: IconButton.styleFrom(
+                                backgroundColor: emerald,
+                                foregroundColor: Colors.white,
+                                side: const BorderSide(
+                                  color: Colors.white,
+                                  width: 3,
+                                ),
+                              ),
+                              icon: const Icon(
+                                Icons.camera_alt_outlined,
+                                size: 19,
+                              ),
+                              onPressed: _photoSheet,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    store.name,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: navy,
+                      fontSize: 23,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    store.email,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: _subtle, fontSize: 13),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFECFDF5),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.verified_user_outlined,
+                          color: Color(0xFF047857),
+                          size: 14,
+                        ),
+                        SizedBox(width: 5),
                         Text(
-                          'Emergency fund',
+                          'Personal Account',
+                          style: TextStyle(
+                            color: Color(0xFF047857),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _editProfile,
+                      icon: const Icon(Icons.edit_outlined, size: 17),
+                      label: const Text('Edit Profile'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: navy,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(46),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            _SectionTitle('Financial Overview', trailing: stats.monthName),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _StatCard(
+                    icon: Icons.receipt_long_outlined,
+                    label: 'Spent This Month',
+                    amount: _lkr(stats.monthTotal),
+                    tint: navy,
+                    onTap: () =>
+                        _open(MonthlyReportsScreen(expenses: widget.expenses)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _StatCard(
+                    icon: Icons.account_balance_wallet_outlined,
+                    label: 'Monthly Budget',
+                    amount: _lkr(store.monthlyBudget),
+                    tint: emerald,
+                    onTap: () => _open(const BudgetOverviewScreen()),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _StatCard(
+                    icon: Icons.savings_outlined,
+                    label: 'Savings Goal',
+                    amount: _lkr(store.savingsGoal),
+                    tint: const Color(0xFF6366F1),
+                    onTap: () => _savingsSheet(store, stats),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            const _SectionTitle('Personal Information'),
+            const SizedBox(height: 12),
+            _MenuGroup(
+              items: [
+                _MenuItem(
+                  Icons.person_outline_rounded,
+                  'Personal Details',
+                  _editProfile,
+                ),
+                _MenuItem(
+                  Icons.grid_view_outlined,
+                  'My Categories',
+                  () => _open(CategoriesScreen(expenses: widget.expenses)),
+                ),
+                _MenuItem(
+                  Icons.tune_outlined,
+                  'Budget Preferences',
+                  () => _open(const BudgetOverviewScreen()),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            const _SectionTitle('Account'),
+            const SizedBox(height: 12),
+            _MenuGroup(
+              items: [
+                _MenuItem(
+                  Icons.lock_outline_rounded,
+                  'Change Password',
+                  () => _sheet(
+                    'Change Password',
+                    const Text(
+                      'You’re viewing a demo profile. Password changes will be available when an account sign-in service is connected.',
+                    ),
+                  ),
+                ),
+                _MenuItem(
+                  Icons.shield_outlined,
+                  'Privacy & Security',
+                  () => _sheet(
+                    'Privacy & Security',
+                    const Text(
+                      'This demo keeps profile edits in memory for the current session. No bank connection or cloud profile storage is configured.',
+                    ),
+                  ),
+                ),
+                _MenuItem(
+                  Icons.notifications_none_rounded,
+                  'Notification Preferences',
+                  _notifications,
+                ),
+                _MenuItem(
+                  Icons.link_rounded,
+                  'Connected Accounts',
+                  () => _sheet(
+                    'Connected Accounts',
+                    const Column(
+                      children: [
+                        Icon(
+                          Icons.account_balance_outlined,
+                          size: 40,
+                          color: emerald,
+                        ),
+                        SizedBox(height: 12),
+                        Text(
+                          'No accounts connected',
                           style: TextStyle(
                             color: navy,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        SizedBox(height: 12),
-                        Text('LKR 60,000 of LKR 150,000 saved'),
-                        SizedBox(height: 12),
-                        LinearProgressIndicator(
-                          value: 0.4,
-                          color: emerald,
-                          backgroundColor: _gray,
-                          minHeight: 8,
+                        SizedBox(height: 8),
+                        Text(
+                          'You can track expenses manually. Bank connections are not available in this demo.',
+                          textAlign: TextAlign.center,
                         ),
-                        SizedBox(height: 10),
-                        Text('40% of your sample goal reached. Keep going!'),
                       ],
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          const _SectionTitle('Personal Information'),
-          const SizedBox(height: 12),
-          _MenuGroup(
-            items: [
-              _MenuItem(
-                Icons.person_outline_rounded,
-                'Personal Details',
-                _editProfile,
-              ),
-              _MenuItem(
-                Icons.credit_card_outlined,
-                'Manage Payment Methods',
-                () => _sheet(
-                  'Manage Payment Methods',
-                  const Column(
-                    children: [
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Icon(Icons.credit_card, color: navy),
-                        title: Text('Visa •••• 4832'),
-                        subtitle: Text('Sample card • Default payment method'),
-                      ),
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Icon(Icons.payments_outlined, color: emerald),
-                        title: Text('Cash'),
-                        subtitle: Text('Available for expense tracking'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              _MenuItem(
-                Icons.grid_view_outlined,
-                'My Categories',
-                () => _open(CategoriesScreen(expenses: widget.expenses)),
-              ),
-              _MenuItem(
-                Icons.tune_outlined,
-                'Budget Preferences',
-                () => _open(const BudgetOverviewScreen()),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          const _SectionTitle('Account'),
-          const SizedBox(height: 12),
-          _MenuGroup(
-            items: [
-              _MenuItem(
-                Icons.lock_outline_rounded,
-                'Change Password',
-                () => _sheet(
-                  'Change Password',
-                  const Text(
-                    'You’re viewing a demo profile. Password changes will be available when an account sign-in service is connected.',
-                  ),
-                ),
-              ),
-              _MenuItem(
-                Icons.shield_outlined,
-                'Privacy & Security',
-                () => _sheet(
-                  'Privacy & Security',
-                  const Text(
-                    'This demo keeps profile edits in memory for the current session. No bank connection or cloud profile storage is configured.',
-                  ),
-                ),
-              ),
-              _MenuItem(
-                Icons.notifications_none_rounded,
-                'Notification Preferences',
-                _notifications,
-              ),
-              _MenuItem(
-                Icons.link_rounded,
-                'Connected Accounts',
-                () => _sheet(
-                  'Connected Accounts',
-                  const Column(
-                    children: [
-                      Icon(
-                        Icons.account_balance_outlined,
-                        size: 40,
-                        color: emerald,
-                      ),
-                      SizedBox(height: 12),
-                      Text(
-                        'No accounts connected',
-                        style: TextStyle(
-                          color: navy,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'You can track expenses manually. Bank connections are not available in this demo.',
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'SPENDLY',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: navy,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 3,
-              fontSize: 11,
+              ],
             ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'A little clarity. A lot more control.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: _subtle, fontSize: 11),
-          ),
-        ],
+            const SizedBox(height: 24),
+            const Text(
+              'SPENDLY',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: navy,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 3,
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'A little clarity. A lot more control.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: _subtle, fontSize: 11),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -773,4 +791,75 @@ class _MenuGroup extends StatelessWidget {
       ],
     ),
   );
+}
+
+String _lkr(double amount) {
+  final whole = amount
+      .toStringAsFixed(0)
+      .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+  return 'LKR $whole';
+}
+
+class _GoalDialog extends StatefulWidget {
+  const _GoalDialog({required this.initial});
+
+  final double initial;
+
+  @override
+  State<_GoalDialog> createState() => _GoalDialogState();
+}
+
+class _GoalDialogState extends State<_GoalDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final _controller = TextEditingController(
+    text: widget.initial.toStringAsFixed(0),
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Savings goal'),
+      content: Form(
+        key: _formKey,
+        child: TextFormField(
+          controller: _controller,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(
+            labelText: 'Goal amount',
+            prefixText: 'LKR ',
+          ),
+          validator: (value) {
+            final amount = double.tryParse((value ?? '').replaceAll(',', ''));
+            return amount == null || !amount.isFinite || amount <= 0
+                ? 'Enter a valid goal'
+                : null;
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              Navigator.pop(
+                context,
+                double.parse(_controller.text.replaceAll(',', '')),
+              );
+            }
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
 }

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'expense_model.dart';
 import 'expense_details_screen.dart';
+import 'finora_store.dart';
 import 'finora_theme.dart';
+import 'monthly_reports_screen.dart';
 
 class ExpenseHistoryScreen extends StatefulWidget {
   const ExpenseHistoryScreen({super.key, required this.expenses});
@@ -19,6 +21,9 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
   String? _categoryFilter;
   String _dateFilter = 'All dates';
   String _amountFilter = 'Any amount';
+
+  /// Month being listed; null shows every month.
+  DateTime? _month = DateTime(DateTime.now().year, DateTime.now().month);
 
   @override
   void initState() {
@@ -42,13 +47,20 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
           expense.category.toLowerCase().contains(_query);
       final matchesCategory =
           _categoryFilter == null || expense.category == _categoryFilter;
-      final group = _dateGroup(expense.date);
+      final date = _dateOf(expense);
+      final today = DateUtils.dateOnly(DateTime.now());
+      final monday = today.subtract(Duration(days: today.weekday - 1));
+      final matchesMonth =
+          _month == null ||
+          (date != null &&
+              date.year == _month!.year &&
+              date.month == _month!.month);
       final matchesDate = switch (_dateFilter) {
-        'Today' => group == 'Today',
+        'Today' => date != null && DateUtils.isSameDay(date, today),
         'This week' =>
-          group == 'Today' ||
-              group == 'Yesterday' ||
-              group == 'Earlier this week',
+          date != null &&
+              !DateUtils.dateOnly(date).isBefore(monday) &&
+              !DateUtils.dateOnly(date).isAfter(today),
         _ => true,
       };
       final amount = _amountValue(expense.amount);
@@ -58,7 +70,11 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
         'Over LKR 5,000' => amount > 5000,
         _ => true,
       };
-      return matchesSearch && matchesCategory && matchesDate && matchesAmount;
+      return matchesSearch &&
+          matchesCategory &&
+          matchesMonth &&
+          matchesDate &&
+          matchesAmount;
     }).toList();
   }
 
@@ -68,6 +84,16 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
       (total, expense) => total + _amountValue(expense.amount),
     );
   }
+
+  DateTime? _dateOf(ExpenseItem expense) =>
+      MonthlyReportData.parseDate(expense.date, DateTime.now());
+
+  String get _monthLabel => _month == null
+      ? 'All time'
+      : '${_monthNames[_month!.month - 1]} ${_month!.year}';
+
+  /// Tells the shared store that [widget.expenses] changed underneath it.
+  void _notifyStore() => FinoraScope.maybeOf(context)?.touch();
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +107,13 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: [
-          _MonthlyTotal(total: _total, count: expenses.length),
+          _MonthlyTotal(
+            label: _month == null
+                ? 'ALL EXPENSES'
+                : '${_monthNames[_month!.month - 1].toUpperCase()} EXPENSES',
+            total: _total,
+            count: expenses.length,
+          ),
           const SizedBox(height: 18),
           TextField(
             controller: _searchController,
@@ -110,7 +142,7 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
               Expanded(
                 child: _SelectorButton(
                   icon: Icons.calendar_month_outlined,
-                  label: 'October 2026',
+                  label: _monthLabel,
                   onTap: () => _selectMonth(context),
                 ),
               ),
@@ -160,14 +192,18 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
                   MaterialPageRoute(
                     builder: (_) => ExpenseDetailsScreen(
                       expense: expense,
-                      onUpdated: (updated) => setState(() {
-                        final index = widget.expenses.indexOf(expense);
-                        if (index >= 0) widget.expenses[index] = updated;
-                        expense = updated;
-                      }),
-                      onDeleted: () => setState(() {
-                        widget.expenses.remove(expense);
-                      }),
+                      onUpdated: (updated) {
+                        setState(() {
+                          final index = widget.expenses.indexOf(expense);
+                          if (index >= 0) widget.expenses[index] = updated;
+                          expense = updated;
+                        });
+                        _notifyStore();
+                      },
+                      onDeleted: () {
+                        setState(() => widget.expenses.remove(expense));
+                        _notifyStore();
+                      },
                     ),
                   ),
                 ),
@@ -188,56 +224,72 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
   ) {
     final groups = <String, List<ExpenseItem>>{};
     for (final expense in expenses) {
-      final group = _dateGroup(expense.date);
+      final group = _dateGroup(expense);
       groups.putIfAbsent(group, () => []).add(expense);
     }
     return groups;
   }
 
-  String _dateGroup(String date) {
-    if (date.startsWith('Today')) return 'Today';
-    if (date.startsWith('Yesterday')) return 'Yesterday';
-    return 'Earlier this week';
+  String _dateGroup(ExpenseItem expense) {
+    final date = _dateOf(expense);
+    if (date == null) return 'Earlier';
+    final today = DateUtils.dateOnly(DateTime.now());
+    final day = DateUtils.dateOnly(date);
+    if (day == today) return 'Today';
+    if (day == today.subtract(const Duration(days: 1))) return 'Yesterday';
+    final monday = today.subtract(Duration(days: today.weekday - 1));
+    if (!day.isBefore(monday)) return 'Earlier this week';
+    return '${_monthNames[day.month - 1]} ${day.year}';
   }
 
   Future<void> _selectMonth(BuildContext context) async {
-    await showModalBottomSheet<void>(
+    final now = DateTime.now();
+    final months = <DateTime?>[
+      null,
+      for (var i = 0; i < 12; i++) DateTime(now.year, now.month - i),
+    ];
+    final picked = await showModalBottomSheet<(DateTime?,)>(
       context: context,
       showDragHandle: true,
       builder: (context) => SafeArea(
-        child: Padding(
+        child: ListView(
+          shrinkWrap: true,
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Select month',
-                style: TextStyle(
-                  color: navy,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
+          children: [
+            const Text(
+              'Select month',
+              style: TextStyle(
+                color: navy,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
               ),
-              const SizedBox(height: 14),
-              ...['October 2026', 'September 2026', 'August 2026'].map(
-                (month) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(month),
-                  trailing: month == 'October 2026'
-                      ? const Icon(Icons.check_rounded, color: emerald)
-                      : null,
-                  onTap: () => Navigator.pop(context),
+            ),
+            const SizedBox(height: 14),
+            for (final month in months)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  month == null
+                      ? 'All time'
+                      : '${_monthNames[month.month - 1]} ${month.year}',
                 ),
+                trailing: month == _month
+                    ? const Icon(Icons.check_rounded, color: emerald)
+                    : null,
+                onTap: () => Navigator.pop(context, (month,)),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
+    if (picked != null) setState(() => _month = picked.$1);
   }
 
   Future<void> _openFilters(BuildContext context) async {
+    final categoryNames = {
+      ...?FinoraScope.maybeOf(context)?.categories.map((c) => c.name),
+      ...widget.expenses.map((e) => e.category),
+    }.toList();
     var category = _categoryFilter;
     var date = _dateFilter;
     var amount = _amountFilter;
@@ -289,7 +341,7 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
                       value: null,
                       child: Text('All categories'),
                     ),
-                    ..._categories.map(
+                    ...categoryNames.map(
                       (item) => DropdownMenuItem<String?>(
                         value: item,
                         child: Text(item),
@@ -379,8 +431,13 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
 }
 
 class _MonthlyTotal extends StatelessWidget {
-  const _MonthlyTotal({required this.total, required this.count});
+  const _MonthlyTotal({
+    required this.label,
+    required this.total,
+    required this.count,
+  });
 
+  final String label;
   final double total;
   final int count;
 
@@ -405,9 +462,9 @@ class _MonthlyTotal extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'OCTOBER EXPENSES',
-                  style: TextStyle(
+                Text(
+                  label,
+                  style: const TextStyle(
                     color: Color(0xFFB4C0D4),
                     fontSize: 11,
                     letterSpacing: 1.1,
@@ -425,7 +482,7 @@ class _MonthlyTotal extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  '$count ${count == 1 ? 'transaction' : 'transactions'} this month',
+                  '$count ${count == 1 ? 'transaction' : 'transactions'}',
                   style: const TextStyle(
                     color: Color(0xFFB4C0D4),
                     fontSize: 12,
@@ -670,14 +727,19 @@ class _HistoryEmptyState extends StatelessWidget {
   }
 }
 
-const _categories = [
-  'Food & Dining',
-  'Transport',
-  'Shopping',
-  'Bills & Utilities',
-  'Education',
-  'Health',
-  'Entertainment',
+const _monthNames = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 double _amountValue(String amount) {

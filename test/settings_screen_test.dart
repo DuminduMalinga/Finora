@@ -47,7 +47,7 @@ void main() {
     final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
     expect(
       bar.destinations.whereType<NavigationDestination>().map((e) => e.label),
-      ['Home', 'Settings', 'Budgets', 'Categories', 'Reports'],
+      ['Home', 'Budgets', 'Categories', 'Reports', 'Settings'],
     );
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
@@ -181,10 +181,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Copy CSV'));
     await tester.pumpAndSettle();
-    expect(
-      copied,
-      startsWith('Title,Category,Amount,Date,Payment method,Notes\r\n'),
-    );
+    expect(copied, startsWith('Title,Category,Amount,Date,Notes\r\n'));
     expect(copied, contains('"Rs. 1,250.00"'));
     await reveal(tester, 'Backup & Restore');
     await tester.tap(find.text('Backup & Restore'));
