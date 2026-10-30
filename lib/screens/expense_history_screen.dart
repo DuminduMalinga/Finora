@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'expense_model.dart';
+import 'expense_details_screen.dart';
 import 'finora_theme.dart';
 
 class ExpenseHistoryScreen extends StatefulWidget {
@@ -157,7 +158,16 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
                 expenses: entry.value,
                 onExpenseTap: (expense) => Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => ExpenseDetailsScreen(expense: expense),
+                    builder: (_) => ExpenseDetailsScreen(
+                      expense: expense,
+                      onUpdated: (updated) => setState(() {
+                        final index = widget.expenses.indexOf(expense);
+                        if (index >= 0) widget.expenses[index] = updated;
+                      }),
+                      onDeleted: () => setState(() {
+                        widget.expenses.remove(expense);
+                      }),
+                    ),
                   ),
                 ),
               ),
@@ -654,128 +664,6 @@ class _HistoryEmptyState extends StatelessWidget {
             style: TextStyle(color: Color(0xFF94A3B8)),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class ExpenseDetailsScreen extends StatelessWidget {
-  const ExpenseDetailsScreen({super.key, required this.expense});
-
-  final ExpenseItem expense;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Expense details'),
-        backgroundColor: canvas,
-        foregroundColor: navy,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Card(
-            elevation: 0,
-            color: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 28),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: expense.background,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      expense.icon,
-                      color: expense.iconColor,
-                      size: 30,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    expense.title,
-                    style: const TextStyle(
-                      color: navy,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'LKR ${_formatAmount(_amountValue(expense.amount))}',
-                    style: const TextStyle(
-                      color: coral,
-                      fontSize: 25,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    expense.date,
-                    style: const TextStyle(color: Color(0xFF94A3B8)),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            elevation: 0,
-            color: Colors.white,
-            child: Column(
-              children: [
-                _DetailRow(
-                  label: 'Category',
-                  value: expense.category,
-                  icon: Icons.grid_view_rounded,
-                ),
-                const Divider(height: 1),
-                const _DetailRow(
-                  label: 'Payment method',
-                  value: 'Visa •••• 4832',
-                  icon: Icons.credit_card_rounded,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: navy, size: 20),
-      title: Text(
-        label,
-        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
-      ),
-      subtitle: Text(
-        value,
-        style: const TextStyle(
-          color: navy,
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-        ),
       ),
     );
   }

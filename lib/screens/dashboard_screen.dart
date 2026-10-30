@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'expense_model.dart';
 import 'expense_history_screen.dart';
+import 'expense_details_screen.dart';
 import 'budget_overview_screen.dart';
 import 'finora_theme.dart';
 
@@ -71,8 +72,14 @@ class DashboardScreen extends StatelessWidget {
                       expense: expense,
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) =>
-                              ExpenseDetailsScreen(expense: expense),
+                          builder: (_) => ExpenseDetailsScreen(
+                            expense: expense,
+                            onUpdated: (updated) {
+                              final index = expenses.indexOf(expense);
+                              if (index >= 0) expenses[index] = updated;
+                            },
+                            onDeleted: () => expenses.remove(expense),
+                          ),
                         ),
                       ),
                     ),

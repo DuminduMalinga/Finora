@@ -53,7 +53,7 @@ class _HomePageState extends State<HomePage> {
       DashboardScreen(expenses: _expenses, onAddExpense: _openAddExpense),
       ExpenseHistoryScreen(expenses: _expenses),
       const BudgetOverviewScreen(),
-      const CategoriesScreen(),
+      CategoriesScreen(expenses: _expenses),
     ];
 
     return Scaffold(
