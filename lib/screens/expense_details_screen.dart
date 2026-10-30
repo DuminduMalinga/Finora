@@ -60,9 +60,12 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
       ),
     );
     if (shouldDelete != true || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
     widget.onDeleted?.call();
     Navigator.pop(context);
-    showMessage(context, 'Expense deleted successfully');
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Expense deleted successfully')),
+    );
   }
 
   @override
@@ -86,6 +89,7 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
         ],
       ),
       body: ListView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: [
           Card(
@@ -112,6 +116,16 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  const Text(
+                    'SPENDLY · EXPENSE',
+                    style: TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 11,
+                      letterSpacing: 1.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Text(
                     _expense.title,
                     textAlign: TextAlign.center,
@@ -122,12 +136,15 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'LKR ${_amount(_expense.amount)}',
-                    style: const TextStyle(
-                      color: coral,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'LKR ${_formattedAmount(_expense.amount)}',
+                      style: const TextStyle(
+                        color: navy,
+                        fontSize: 38,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 7),
@@ -152,7 +169,13 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
                 _DetailRow(
                   label: 'Category',
                   value: _expense.category,
-                  icon: Icons.grid_view_rounded,
+                  icon: _expense.icon,
+                ),
+                const Divider(height: 1, indent: 64),
+                _DetailRow(
+                  label: 'Transaction date',
+                  value: _expense.date,
+                  icon: Icons.calendar_today_outlined,
                 ),
                 const Divider(height: 1, indent: 64),
                 _DetailRow(
@@ -172,12 +195,13 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          OutlinedButton.icon(
+          FilledButton.icon(
             onPressed: _editExpense,
             icon: const Icon(Icons.edit_outlined),
             label: const Text('Edit Expense'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: navy,
+            style: FilledButton.styleFrom(
+              backgroundColor: navy,
+              foregroundColor: Colors.white,
               minimumSize: const Size.fromHeight(52),
               side: const BorderSide(color: navy),
               shape: RoundedRectangleBorder(
@@ -187,6 +211,7 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
           ),
           const SizedBox(height: 10),
           TextButton.icon(
+            style: TextButton.styleFrom(minimumSize: const Size.fromHeight(52)),
             onPressed: _deleteExpense,
             icon: const Icon(Icons.delete_outline_rounded, color: coral),
             label: const Text(
@@ -214,19 +239,25 @@ class _EditExpenseScreenState extends State<_EditExpenseScreen> {
   late final TextEditingController _titleController;
   late final TextEditingController _notesController;
   late final TextEditingController _paymentController;
+  late final TextEditingController _dateController;
+  late String _category;
+  DateTime? _selectedDate;
   final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
     super.initState();
     _amountController = TextEditingController(
-      text: _amount(widget.expense.amount),
+      text: _amount(widget.expense.amount).replaceAll(',', ''),
     );
     _titleController = TextEditingController(text: widget.expense.title);
     _notesController = TextEditingController(text: widget.expense.notes);
     _paymentController = TextEditingController(
       text: widget.expense.paymentMethod,
     );
+    _dateController = TextEditingController(text: widget.expense.date);
+    _category = widget.expense.category;
+    _selectedDate = _parseDate(widget.expense.date);
   }
 
   @override
@@ -235,6 +266,7 @@ class _EditExpenseScreenState extends State<_EditExpenseScreen> {
     _titleController.dispose();
     _notesController.dispose();
     _paymentController.dispose();
+    _dateController.dispose();
     super.dispose();
   }
 
@@ -244,12 +276,18 @@ class _EditExpenseScreenState extends State<_EditExpenseScreen> {
       context,
       ExpenseItem(
         title: _titleController.text.trim(),
-        category: widget.expense.category,
-        amount: 'LKR ${_amountController.text.trim()}',
-        date: widget.expense.date,
-        icon: widget.expense.icon,
-        iconColor: widget.expense.iconColor,
-        background: widget.expense.background,
+        category: _category,
+        amount: 'LKR ${_formattedAmount(_amountController.text.trim())}',
+        date: _dateController.text,
+        icon: _category == widget.expense.category
+            ? widget.expense.icon
+            : _categoryIcons[_category]!,
+        iconColor: _category == widget.expense.category
+            ? widget.expense.iconColor
+            : navy,
+        background: _category == widget.expense.category
+            ? widget.expense.background
+            : paleBlue,
         paymentMethod: _paymentController.text.trim(),
         notes: _notesController.text.trim(),
       ),
@@ -278,8 +316,10 @@ class _EditExpenseScreenState extends State<_EditExpenseScreen> {
               ),
               prefixText: 'LKR ',
               validator: (value) {
-                final amount = double.tryParse(value ?? '');
-                if (amount == null || amount <= 0) {
+                final amount = double.tryParse(
+                  (value ?? '').replaceAll(',', ''),
+                );
+                if (amount == null || !amount.isFinite || amount <= 0) {
                   return 'Enter a valid amount';
                 }
                 return null;
@@ -294,7 +334,64 @@ class _EditExpenseScreenState extends State<_EditExpenseScreen> {
                   : null,
             ),
             const SizedBox(height: 18),
-            _EditField(label: 'Payment method', controller: _paymentController),
+            DropdownButtonFormField<String>(
+              initialValue: _category,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Category'),
+              items: {..._categoryIcons.keys, widget.expense.category}
+                  .map(
+                    (category) => DropdownMenuItem(
+                      value: category,
+                      child: Text(category),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) => setState(() => _category = value!),
+            ),
+            const SizedBox(height: 18),
+            TextFormField(
+              controller: _dateController,
+              readOnly: true,
+              decoration: const InputDecoration(
+                labelText: 'Transaction date',
+                suffixIcon: Icon(Icons.calendar_today_outlined),
+              ),
+              onTap: () async {
+                final now = DateTime.now();
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _selectedDate ?? now,
+                  firstDate: DateTime(2000),
+                  lastDate: now,
+                );
+                if (picked == null || !mounted) return;
+                _selectedDate = picked;
+                _dateController.text =
+                    '${_months[picked.month - 1]} ${picked.day}, ${picked.year}';
+              },
+            ),
+            const SizedBox(height: 18),
+            DropdownButtonFormField<String>(
+              initialValue: widget.expense.paymentMethod,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Payment method'),
+              items:
+                  {
+                        widget.expense.paymentMethod,
+                        'Cash',
+                        'Card',
+                        'Bank',
+                        'Wallet',
+                      }
+                      .map(
+                        (method) => DropdownMenuItem(
+                          value: method,
+                          child: Text(method),
+                        ),
+                      )
+                      .toList(),
+              onChanged: (value) => _paymentController.text = value!,
+            ),
             const SizedBox(height: 18),
             _EditField(
               label: 'Notes',
@@ -406,3 +503,59 @@ class _DetailRow extends StatelessWidget {
 String _amount(String value) {
   return value.replaceFirst(RegExp(r'^(LKR|Rs\.)\s*'), '');
 }
+
+String _formattedAmount(String value) {
+  final number = double.tryParse(_amount(value).replaceAll(',', '')) ?? 0;
+  final parts = number.toStringAsFixed(2).split('.');
+  final whole = parts.first.replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (_) => ',',
+  );
+  return '$whole.${parts.last}';
+}
+
+const _months = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+DateTime? _parseDate(String value) {
+  final now = DateUtils.dateOnly(DateTime.now());
+  if (value.startsWith('Today')) return now;
+  if (value.startsWith('Yesterday')) {
+    return now.subtract(const Duration(days: 1));
+  }
+  final match = RegExp(r'^(\w{3}) (\d{1,2})(?:, (\d{4}))?').firstMatch(value);
+  if (match == null) return null;
+  final month = _months.indexOf(match[1]!);
+  if (month < 0) return null;
+  final date = DateTime(
+    int.tryParse(match[3] ?? '') ?? now.year,
+    month + 1,
+    int.parse(match[2]!),
+  );
+  return date.isAfter(now) ? now : date;
+}
+
+const _categoryIcons = {
+  'Food & Dining': Icons.restaurant_rounded,
+  'Food': Icons.restaurant_rounded,
+  'Transport': Icons.directions_car_filled_rounded,
+  'Shopping': Icons.shopping_bag_rounded,
+  'Bills & Utilities': Icons.receipt_long_rounded,
+  'Bills': Icons.receipt_long_rounded,
+  'Education': Icons.school_rounded,
+  'Health': Icons.favorite_rounded,
+  'Entertainment': Icons.movie_rounded,
+  'Other': Icons.more_horiz_rounded,
+};

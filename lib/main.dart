@@ -7,6 +7,7 @@ import 'screens/dashboard_screen.dart';
 import 'screens/expense_history_screen.dart';
 import 'screens/expense_model.dart';
 import 'screens/finora_theme.dart';
+import 'screens/monthly_reports_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -54,6 +55,7 @@ class _HomePageState extends State<HomePage> {
       ExpenseHistoryScreen(expenses: _expenses),
       const BudgetOverviewScreen(),
       CategoriesScreen(expenses: _expenses),
+      MonthlyReportsScreen(expenses: _expenses),
     ];
 
     return Scaffold(
@@ -97,6 +99,11 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.grid_view_outlined),
             selectedIcon: Icon(Icons.grid_view_rounded),
             label: 'Categories',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.bar_chart_outlined),
+            selectedIcon: Icon(Icons.bar_chart_rounded),
+            label: 'Reports',
           ),
         ],
       ),

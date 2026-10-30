@@ -5,6 +5,7 @@ import 'expense_history_screen.dart';
 import 'expense_details_screen.dart';
 import 'budget_overview_screen.dart';
 import 'finora_theme.dart';
+import 'monthly_reports_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({
@@ -50,7 +51,11 @@ class DashboardScreen extends StatelessWidget {
               SectionHeader(
                 title: 'Where your money goes',
                 action: 'See all',
-                onTap: () => showMessage(context, 'Reports coming soon'),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => MonthlyReportsScreen(expenses: expenses),
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
               const CategoryBreakdown(),

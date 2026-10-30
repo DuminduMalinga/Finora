@@ -163,6 +163,7 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
                       onUpdated: (updated) => setState(() {
                         final index = widget.expenses.indexOf(expense);
                         if (index >= 0) widget.expenses[index] = updated;
+                        expense = updated;
                       }),
                       onDeleted: () => setState(() {
                         widget.expenses.remove(expense);
