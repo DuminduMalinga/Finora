@@ -232,7 +232,7 @@ class _MonthlyReportsScreenState extends State<MonthlyReportsScreen> {
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
         children: [
           const Text(
-            'Your Spendly spending snapshot',
+            'Your Finora spending snapshot',
             style: TextStyle(color: _muted),
           ),
           const SizedBox(height: 18),

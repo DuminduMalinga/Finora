@@ -124,7 +124,7 @@ class _ExpenseDetailsScreenState extends State<ExpenseDetailsScreen> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'SPENDLY · EXPENSE',
+                    'FINORA · EXPENSE',
                     style: TextStyle(
                       color: Color(0xFF64748B),
                       fontSize: 11,

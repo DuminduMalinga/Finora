@@ -64,8 +64,11 @@ bool sameCategory(String a, String b) => a.toLowerCase() == b.toLowerCase();
 
 /// Single source of truth for everything the screens show and edit.
 class FinoraStore extends ChangeNotifier {
-  FinoraStore({List<ExpenseItem>? expenses})
+  FinoraStore({List<ExpenseItem>? expenses, this.onboarded = true})
     : expenses = expenses ?? <ExpenseItem>[];
+
+  /// False until the user finishes (or skips) the first-run setup.
+  bool onboarded;
 
   final List<ExpenseItem> expenses;
   final List<AppCategory> categories = List.of(defaultCategories);
@@ -107,6 +110,29 @@ class FinoraStore extends ChangeNotifier {
     expenses
       ..clear()
       ..addAll(items);
+    notifyListeners();
+  }
+
+  /// Applies the first-run setup: budget, chosen categories and their limits.
+  void completeSetup({
+    required double budget,
+    required List<AppCategory> categories,
+    required Map<String, double> limits,
+  }) {
+    monthlyBudget = budget;
+    this.categories
+      ..clear()
+      ..addAll(categories);
+    categoryLimits
+      ..clear()
+      ..addAll(limits);
+    onboarded = true;
+    notifyListeners();
+  }
+
+  /// Leaves the default categories and budget in place.
+  void skipSetup() {
+    onboarded = true;
     notifyListeners();
   }
 

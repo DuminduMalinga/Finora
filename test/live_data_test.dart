@@ -26,7 +26,7 @@ void main() {
     tester,
   ) async {
     phone(tester);
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const MyApp(showOnboarding: false));
 
     // Nothing is pre-filled.
     expect(find.text('Rs. 0.00'), findsOneWidget);

@@ -9,13 +9,17 @@ import 'screens/finora_theme.dart';
 import 'screens/monthly_reports_screen.dart';
 import 'screens/settings_preferences.dart';
 import 'screens/settings_screen.dart';
+import 'screens/welcome_screen.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  /// [showOnboarding] false opens straight into the app (used by tests).
+  const MyApp({super.key, this.showOnboarding = true});
+
+  final bool showOnboarding;
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -23,7 +27,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final _settings = SettingsPreferences();
-  final _store = FinoraStore();
+  late final _store = FinoraStore(onboarded: !widget.showOnboarding);
 
   @override
   void dispose() {
@@ -39,7 +43,7 @@ class _MyAppState extends State<MyApp> {
       builder: (context, _) => FinoraScope(
         store: _store,
         child: MaterialApp(
-          title: 'Spendly',
+          title: 'Finora',
           debugShowCheckedModeBanner: false,
           theme: FinoraTheme.theme.copyWith(
             colorScheme: FinoraTheme.theme.colorScheme.copyWith(
@@ -56,11 +60,23 @@ class _MyAppState extends State<MyApp> {
             ).copyWith(secondary: _settings.accent),
           ),
           themeMode: _settings.themeMode,
-          home: HomePage(settings: _settings),
+          home: _Root(settings: _settings),
         ),
       ),
     );
   }
+}
+
+/// Shows the welcome/setup flow until the user has configured the app.
+class _Root extends StatelessWidget {
+  const _Root({required this.settings});
+
+  final SettingsPreferences settings;
+
+  @override
+  Widget build(BuildContext context) => FinoraScope.of(context).onboarded
+      ? HomePage(settings: settings)
+      : const WelcomeScreen();
 }
 
 class HomePage extends StatefulWidget {
