@@ -2,8 +2,12 @@
 
 Finora is a personal expense tracker for Android and iOS, built with Flutter.
 Record what you spend, set a monthly budget and a limit for each category, and
-see where your money goes. Everything is stored on the phone, and Finora warns
-you when you get close to a budget.
+see where your money goes. On supported mobile platforms, your financial data
+is stored locally in SQLite, with alerts as you approach or exceed a budget.
+
+[Features](#features) · [Screenshots](#screenshots) ·
+[Getting started](#getting-started) · [Architecture](#how-it-works) ·
+[Tests](#tests)
 
 <p align="center">
   <img src="docs/screenshots/03_home.png" width="230" alt="Home" />
@@ -73,9 +77,9 @@ you when you get close to a budget.
 
 | Area | Choice |
 |---|---|
-| Framework | Flutter 3.38 / Dart 3.10, Material 3 |
+| Framework | Flutter / Dart with Material 3 |
 | Local database | [`sqflite`](https://pub.dev/packages/sqflite) (SQLite) |
-| Simple flags | [`shared_preferences`](https://pub.dev/packages/shared_preferences) |
+| Onboarding preference | [`shared_preferences`](https://pub.dev/packages/shared_preferences) |
 | Notifications | [`flutter_local_notifications`](https://pub.dev/packages/flutter_local_notifications) |
 | Profile photo | [`image_picker`](https://pub.dev/packages/image_picker) |
 | State management | One `ChangeNotifier` store shared through an `InheritedNotifier` |
@@ -86,9 +90,10 @@ you when you get close to a budget.
 - **One source of truth.** `FinoraStore` holds the profile, budget, categories,
   limits and expenses. Screens read it through `FinoraScope`, so a change made
   anywhere shows up everywhere straight away.
-- **Saved as you go.** Every change is queued and written to SQLite in order,
-  so the UI never waits on the database. On start-up the store loads
-  everything before the first screen appears.
+- **Asynchronous persistence.** Changes update shared state immediately,
+  then database writes run in sequence. Stored data is loaded before the
+  first screen appears. Failed writes are logged; the app does not currently
+  display a save-error message.
 - **Alerts are derived, not stored.** `buildNotifications` works out the
   current budget alerts from the real spending. The store compares them with
   the ones already announced this month, so each alert reaches the notification
@@ -111,7 +116,7 @@ so it is shown only once. Clearing the app's data brings it back.
 
 ## Project structure
 
-```
+```text
 lib/
   main.dart                      App start-up, theme, navigation
   data/
@@ -122,23 +127,39 @@ lib/
     expense_model.dart           The expense data class
     budget_alerts.dart           Budget and category-limit alert rules
     app_colors.dart              Light / dark colours
-    welcome_screen.dart  setup_screen.dart
+    welcome_screen.dart         Welcome screen
+    setup_screen.dart           First-run setup
     dashboard_screen.dart        Home
-    add_expense_screen.dart  expense_details_screen.dart
-    expense_history_screen.dart  expense_actions.dart (Edit / Delete menu)
-    budget_overview_screen.dart  categories_screen.dart
-    monthly_reports_screen.dart  notifications_screen.dart
-    profile_screen.dart  settings_screen.dart  settings_preferences.dart
+    add_expense_screen.dart      Expense form
+    expense_details_screen.dart  Expense details
+    expense_history_screen.dart Search and transaction history
+    expense_actions.dart        Edit, delete and undo actions
+    budget_overview_screen.dart Budgets and category limits
+    categories_screen.dart      Category management
+    monthly_reports_screen.dart Monthly charts and summaries
+    notifications_screen.dart   In-app budget alerts
+    profile_screen.dart         Profile management
+    settings_screen.dart        Settings interface
+    settings_preferences.dart   Appearance preferences
+assets/fonts/                   Bundled Inter font and licence
 test/                            Unit, widget and golden-image tests
 docs/screenshots/                Images used in this README
 ```
 
 ## Getting started
 
-You need the [Flutter SDK](https://docs.flutter.dev/get-started/install)
-(3.38 or newer) and an Android or iOS device or emulator.
+Prerequisites:
+
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) **3.38.1 or newer**
+  with **Dart 3.10.4 or newer, below 4.0.0**, as required by the current
+  dependency constraints.
+- An Android device or emulator with the Android toolchain configured.
+  For iOS, use macOS with Xcode and an iOS device or simulator.
+
+From the project root:
 
 ```bash
+flutter doctor
 flutter pub get
 flutter run
 ```
@@ -149,10 +170,16 @@ Build an Android APK:
 flutter build apk
 ```
 
+The APK is generated at `build/app/outputs/flutter-apk/app-release.apk`.
+The current Android configuration uses debug signing for release builds.
+Configure your application ID and release signing before distributing the app.
+
 ### Platform notes
 
-- **Saving data and system notifications work on Android and iOS.** On desktop
-  and web the app runs, but nothing is saved between launches.
+- **SQLite storage and system notifications are initialized only on Android
+  and iOS.** Desktop and web use an in-memory financial-data store, so expenses,
+  budgets and profile changes are not retained between launches. The onboarding
+  flag is stored separately through SharedPreferences.
 - On Android 13 and newer, Finora asks for notification permission once, when
   setup finishes. If you decline, alerts still appear inside the app.
 - Alerts are sent when something changes inside the app (adding an expense,
@@ -179,11 +206,11 @@ A few tests compare screens against golden images in `test/goldens`. If you
 change how a screen looks on purpose, update them with
 `flutter test --update-goldens`.
 
-## Task checklist
+## Project scope
 
-This project follows the "Expense Tracker App" brief:
+The core expense-tracking requirements map to these implementations:
 
-| Brief | Where |
+| Requirement | Implementation |
 |---|---|
 | Design expense management screens | Home, Add, Edit, Details, History, Budgets, Categories, Reports |
 | Add expense categories | Setup, Categories tab, Add Expense form |
