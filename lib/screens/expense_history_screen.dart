@@ -4,7 +4,6 @@ import 'expense_model.dart';
 import 'expense_actions.dart';
 import 'expense_details_screen.dart';
 import 'finora_store.dart';
-import 'finora_theme.dart';
 import 'monthly_reports_screen.dart';
 import 'app_colors.dart';
 
@@ -286,7 +285,7 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
                       : '${_monthNames[month.month - 1]} ${month.year}',
                 ),
                 trailing: month == _month
-                    ? const Icon(Icons.check_rounded, color: emerald)
+                    ? Icon(Icons.check_rounded, color: context.ink)
                     : null,
                 onTap: () => Navigator.pop(context, (month,)),
               ),

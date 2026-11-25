@@ -9,8 +9,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
     await (FontLoader(
-      'Inter',
-    )..addFont(rootBundle.load('assets/fonts/Inter.ttf'))).load();
+      'Outfit',
+    )..addFont(rootBundle.load('assets/fonts/Outfit.ttf'))).load();
     await (FontLoader(
       'MaterialIcons',
     )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
@@ -46,7 +46,7 @@ void main() {
 
     // Home totals follow the expense list.
     expect(find.text('LKR 2,500.00'), findsOneWidget);
-    expect(find.text('LKR 72,500.00 remaining'), findsOneWidget);
+    expect(find.text('LKR 72,500.00 left'), findsOneWidget);
     expect(find.text('Lunch'), findsOneWidget);
 
     // Budgets: the month total and the category card are live.

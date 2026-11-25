@@ -58,6 +58,21 @@ const _otherCategories = [
   ),
 ];
 
+const _forest = Color(0xFF1F3D2B);
+const _sage = Color(0xFFB9C7AB);
+const _sagePale = Color(0xFFDCE9C2);
+const _setupInk = Color(0xFF14221A);
+const _setupMuted = Color(0xFF55634F);
+
+extension _SetupColors on BuildContext {
+  Color get setupPage => isDark ? page : const Color(0xFFF2F6EA);
+  Color get setupBorder => isDark ? line : _sage;
+  Color get setupPale => isDark ? tint : _sagePale;
+  Color get setupFill => isDark ? const Color(0xFF2F5A40) : _forest;
+  Color get setupText => isDark ? ink : _setupInk;
+  Color get setupSub => isDark ? muted : _setupMuted;
+}
+
 String _lkr(double amount) => 'LKR ${formatAmount(amount, decimals: 0)}';
 
 double? _parse(String? text) =>
@@ -169,13 +184,20 @@ class _SetupScreenState extends State<SetupScreen> {
     prefixText: money ? 'LKR ' : null,
     filled: true,
     fillColor: context.surface,
+    labelStyle: TextStyle(color: context.setupSub),
+    floatingLabelStyle: TextStyle(color: context.setupText),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide(color: context.line),
+      borderRadius: BorderRadius.circular(18),
+      borderSide: BorderSide(color: context.setupBorder, width: 1.5),
     ),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide(color: context.line),
+      borderRadius: BorderRadius.circular(18),
+      borderSide: BorderSide(color: context.setupBorder, width: 1.5),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(18),
+      borderSide: BorderSide(color: context.setupFill, width: 2),
     ),
   );
 
@@ -185,17 +207,21 @@ class _SetupScreenState extends State<SetupScreen> {
       avatar: Icon(
         category.icon,
         size: 18,
-        color: selected ? Colors.white : category.color,
+        color: selected ? emerald : context.setupFill,
       ),
       label: Text(category.name),
       selected: selected,
       showCheckmark: false,
-      selectedColor: context.primary,
+      selectedColor: context.setupFill,
       backgroundColor: context.surface,
-      side: BorderSide(color: selected ? context.primary : context.line),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      side: BorderSide(
+        color: selected ? context.setupFill : context.setupBorder,
+        width: 1.5,
+      ),
       labelStyle: TextStyle(
-        color: selected ? Colors.white : context.ink,
-        fontWeight: FontWeight.w600,
+        color: selected ? Colors.white : context.setupText,
+        fontWeight: selected ? FontWeight.w500 : FontWeight.w400,
       ),
       onSelected: (on) => _toggle(category, on),
     );
@@ -212,13 +238,13 @@ class _SetupScreenState extends State<SetupScreen> {
         Text(
           title,
           style: TextStyle(
-            color: context.ink,
+            color: context.setupText,
             fontSize: 17,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 3),
-        Text(subtitle, style: TextStyle(color: context.muted, fontSize: 12.5)),
+        Text(subtitle, style: TextStyle(color: context.setupSub, fontSize: 13)),
       ],
     ),
   );
@@ -228,10 +254,10 @@ class _SetupScreenState extends State<SetupScreen> {
     final budget = _parse(_budget.text) ?? 0;
     final remaining = budget - _allocated;
     return Scaffold(
-      backgroundColor: context.page,
+      backgroundColor: context.setupPage,
       appBar: AppBar(
-        backgroundColor: context.page,
-        foregroundColor: context.ink,
+        backgroundColor: context.setupPage,
+        foregroundColor: context.setupText,
         title: const Text('Set up your budget'),
       ),
       body: SafeArea(
@@ -319,8 +345,11 @@ class _SetupScreenState extends State<SetupScreen> {
                       size: 18,
                     ),
                     label: const Text('Other'),
-                    backgroundColor: context.tint,
-                    side: BorderSide.none,
+                    backgroundColor: context.setupPale,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    side: BorderSide(color: context.setupBorder, width: 1.5),
                     labelStyle: TextStyle(
                       color: context.ink,
                       fontWeight: FontWeight.w600,
@@ -348,8 +377,11 @@ class _SetupScreenState extends State<SetupScreen> {
                     ActionChip(
                       avatar: const Icon(Icons.add_rounded, size: 18),
                       label: const Text('Add category'),
-                      backgroundColor: context.tint,
-                      side: BorderSide.none,
+                      backgroundColor: context.setupPale,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      side: BorderSide(color: context.setupBorder, width: 1.5),
                       labelStyle: TextStyle(
                         color: context.ink,
                         fontWeight: FontWeight.w600,
@@ -380,17 +412,14 @@ class _SetupScreenState extends State<SetupScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          margin: const EdgeInsets.only(top: 4),
-                          padding: const EdgeInsets.all(11),
+                          margin: const EdgeInsets.only(top: 2),
+                          width: 52,
+                          height: 52,
                           decoration: BoxDecoration(
-                            color: category.background,
-                            borderRadius: BorderRadius.circular(13),
+                            color: context.setupFill,
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Icon(
-                            category.icon,
-                            color: category.color,
-                            size: 20,
-                          ),
+                          child: Icon(category.icon, color: emerald, size: 22),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -421,8 +450,8 @@ class _SetupScreenState extends State<SetupScreen> {
                   decoration: BoxDecoration(
                     color: remaining < 0
                         ? coral.withValues(alpha: 0.14)
-                        : emerald.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(14),
+                        : context.setupPale,
+                    borderRadius: BorderRadius.circular(18),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,9 +459,8 @@ class _SetupScreenState extends State<SetupScreen> {
                       Text(
                         'Allocated ${_lkr(_allocated)} of ${_lkr(budget)}',
                         style: TextStyle(
-                          color: context.ink,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
+                          color: context.setupText,
+                          fontSize: 14,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -441,9 +469,13 @@ class _SetupScreenState extends State<SetupScreen> {
                             ? '${_lkr(-remaining)} over your budget'
                             : '${_lkr(remaining)} left',
                         style: TextStyle(
-                          color: remaining < 0 ? coral : emerald,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13,
+                          color: remaining < 0
+                              ? const Color(0xFF9A1519)
+                              : (context.isDark
+                                    ? emerald
+                                    : const Color(0xFF2A5A1B)),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
                         ),
                       ),
                     ],
@@ -462,19 +494,26 @@ class _SetupScreenState extends State<SetupScreen> {
                   ),
                 ),
               const SizedBox(height: 24),
-              FilledButton(
-                onPressed: _finish,
-                style: FilledButton.styleFrom(
-                  backgroundColor: emerald,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(56),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: context.setupFill,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: const [
+                    BoxShadow(color: emerald, offset: Offset(0, 3)),
+                  ],
                 ),
-                child: const Text(
-                  'Finish setup',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                child: FilledButton(
+                  onPressed: _finish,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: context.setupFill,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(56),
+                    shape: const StadiumBorder(),
+                  ),
+                  child: const Text(
+                    'Finish setup',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w500),
+                  ),
                 ),
               ),
             ],

@@ -7,8 +7,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
     await (FontLoader(
-      'Inter',
-    )..addFont(rootBundle.load('assets/fonts/Inter.ttf'))).load();
+      'Outfit',
+    )..addFont(rootBundle.load('assets/fonts/Outfit.ttf'))).load();
     await (FontLoader(
       'MaterialIcons',
     )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
@@ -23,10 +23,10 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(const MyApp());
     expect(
-      find.textContaining('Take Control', findRichText: true),
+      find.textContaining('Know where', findRichText: true),
       findsOneWidget,
     );
-    await tester.tap(find.text('Get Started'));
+    await tester.tap(find.text("Let's Start"));
     await tester.pumpAndSettle();
     expect(find.text('Set up your budget'), findsOneWidget);
   }
@@ -90,7 +90,7 @@ void main() {
 
     // Home is configured with the entered budget.
     expect(find.text('Set up your budget'), findsNothing);
-    expect(find.text('LKR 50,000'), findsOneWidget);
+    expect(find.text('LKR 50,000.00 left'), findsOneWidget);
     expect(find.text('Sam Rivera'), findsOneWidget); // the Home greeting
 
     // The profile shows what was entered during setup.
@@ -170,9 +170,9 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(const MyApp());
-    await tester.tap(find.text('Skip for now'));
+    await tester.tap(find.text('Skip'));
     await tester.pumpAndSettle();
-    expect(find.text('LKR 75,000'), findsOneWidget);
+    expect(find.text('LKR 75,000.00 left'), findsOneWidget);
   });
 
   testWidgets('welcome screen lays out on a 393 x 852 phone', (tester) async {
@@ -182,8 +182,8 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(const MyApp());
     expect(find.text('Finora'), findsOneWidget);
-    expect(find.text('Get Started'), findsOneWidget);
-    expect(find.text('Skip for now'), findsOneWidget);
+    expect(find.text("Let's Start"), findsOneWidget);
+    expect(find.text('Skip'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

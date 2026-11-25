@@ -25,6 +25,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   fonts:
-    - family: Inter
+    - family: Outfit
       fonts:
-        - asset: assets/fonts/Inter.ttf
+        - asset: assets/fonts/Outfit.ttf

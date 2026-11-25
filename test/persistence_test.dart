@@ -28,8 +28,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
     await (FontLoader(
-      'Inter',
-    )..addFont(rootBundle.load('assets/fonts/Inter.ttf'))).load();
+      'Outfit',
+    )..addFont(rootBundle.load('assets/fonts/Outfit.ttf'))).load();
     await (FontLoader(
       'MaterialIcons',
     )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
@@ -241,7 +241,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(MyApp(store: store));
-    expect(find.text('Get Started'), findsNothing);
+    expect(find.text("Let's Start"), findsNothing);
     expect(find.text('Add expense'), findsOneWidget);
   });
 
@@ -255,6 +255,6 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(393, 852));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(MyApp(store: store));
-    expect(find.text('Get Started'), findsOneWidget);
+    expect(find.text("Let's Start"), findsOneWidget);
   });
 }

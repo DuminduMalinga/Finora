@@ -120,7 +120,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       contentPadding: const EdgeInsets.all(16),
       border: border(context.line),
       enabledBorder: border(context.line),
-      focusedBorder: border(emerald, 2),
+      focusedBorder: border(context.ink, 2),
       errorBorder: border(coral),
       focusedErrorBorder: border(coral, 2),
     );
@@ -200,15 +200,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 child: FilledButton(
                   onPressed: _save,
                   style: FilledButton.styleFrom(
-                    backgroundColor: emerald,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                    backgroundColor: context.primary,
+                    foregroundColor: context.onPrimary,
+                    shape: const StadiumBorder(),
                   ),
                   child: const Text(
                     'Save Expense',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -221,29 +219,29 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   Widget _amountField() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: const EdgeInsets.fromLTRB(22, 20, 22, 12),
       decoration: BoxDecoration(
-        color: context.tint,
-        borderRadius: BorderRadius.circular(20),
+        color: context.hero,
+        borderRadius: BorderRadius.circular(28),
       ),
       child: Column(
         children: [
           Text(
             'Amount',
-            style: TextStyle(color: context.muted, fontWeight: FontWeight.w600),
+            style: const TextStyle(color: Color(0xFFC9D4BC), fontSize: 14),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Padding(
-                padding: EdgeInsets.only(top: 14, right: 8),
+                padding: EdgeInsets.only(top: 18, right: 8),
                 child: Text(
                   'LKR',
                   style: TextStyle(
                     color: emerald,
                     fontSize: 20,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -262,14 +260,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                         RegExp(r'^\d{0,9}\.?\d{0,2}'),
                       ),
                     ],
-                    style: TextStyle(
-                      color: context.ink,
+                    style: const TextStyle(
+                      color: Colors.white,
                       fontSize: 44,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                     decoration: InputDecoration(
                       hintText: '0.00',
-                      hintStyle: TextStyle(color: context.faint),
+                      hintStyle: const TextStyle(color: Color(0xFF8E9B80)),
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
@@ -437,10 +435,10 @@ class _CategoryTile extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
-          color: selected ? context.tint : context.surface,
-          borderRadius: BorderRadius.circular(14),
+          color: selected ? navy : context.surface,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? emerald : context.line,
+            color: selected ? navy : context.line,
             width: selected ? 2 : 1,
           ),
         ),
@@ -465,16 +463,16 @@ class _CategoryTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: context.ink,
-                      fontSize: 11,
-                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                      color: selected ? emerald : context.ink,
+                      fontSize: 12,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                     ),
                   ),
                 ],
               ),
             ),
             if (selected)
-              const Positioned(
+              Positioned(
                 top: 4,
                 right: 4,
                 child: Icon(

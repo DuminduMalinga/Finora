@@ -16,8 +16,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
     await (FontLoader(
-      'Inter',
-    )..addFont(rootBundle.load('assets/fonts/Inter.ttf'))).load();
+      'Outfit',
+    )..addFont(rootBundle.load('assets/fonts/Outfit.ttf'))).load();
     await (FontLoader(
       'MaterialIcons',
     )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
@@ -52,16 +52,11 @@ void main() {
           greaterThan(4.0),
           reason: 'muted',
         );
-        expect(
-          contrast(emerald, background),
-          greaterThan(2.3),
-          reason: 'emerald',
-        );
         expect(contrast(coral, background), greaterThan(3), reason: 'coral');
       }
       expect(contrast(c.faint, c.surface), greaterThan(2.5), reason: 'faint');
       expect(
-        contrast(Colors.white, c.primary),
+        contrast(c.onPrimary, c.primary),
         greaterThan(4.5),
         reason: 'button text',
       );

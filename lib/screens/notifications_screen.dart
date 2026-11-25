@@ -105,9 +105,9 @@ class _AllCaughtUp extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
+          Icon(
             Icons.check_circle_outline_rounded,
-            color: emerald,
+            color: context.ink,
             size: 56,
           ),
           const SizedBox(height: 16),

@@ -12,8 +12,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
     await (FontLoader(
-      'Inter',
-    )..addFont(rootBundle.load('assets/fonts/Inter.ttf'))).load();
+      'Outfit',
+    )..addFont(rootBundle.load('assets/fonts/Outfit.ttf'))).load();
     await (FontLoader(
       'MaterialIcons',
     )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();

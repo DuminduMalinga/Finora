@@ -9,7 +9,10 @@ void main() {
   ) async {
     await tester.pumpWidget(const MyApp(showOnboarding: false));
 
-    expect(find.text('Good morning,'), findsOneWidget);
+    expect(
+      find.textContaining(RegExp(r'^Good (morning|afternoon|evening),')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('Add expense'));
     await tester.pumpAndSettle();

@@ -6,7 +6,6 @@ import 'data/finora_database.dart';
 import 'data/notification_service.dart';
 
 import 'screens/add_expense_screen.dart';
-import 'screens/app_colors.dart';
 import 'screens/budget_overview_screen.dart';
 import 'screens/categories_screen.dart';
 import 'screens/dashboard_screen.dart';
@@ -119,48 +118,7 @@ class _MyAppState extends State<MyApp> {
               secondary: _settings.accent,
             ),
           ),
-          darkTheme: ThemeData(
-            useMaterial3: true,
-            brightness: Brightness.dark,
-            fontFamily: 'Inter',
-            scaffoldBackgroundColor: const Color(0xFF0B1220),
-            colorScheme:
-                ColorScheme.fromSeed(
-                  seedColor: navy,
-                  brightness: Brightness.dark,
-                ).copyWith(
-                  primary: const Color(0xFF3B5BA9),
-                  onPrimary: Colors.white,
-                  secondary: _settings.accent,
-                  surface: const Color(0xFF162033),
-                  onSurface: const Color(0xFFF1F5F9),
-                  onSurfaceVariant: const Color(0xFF9AA8BD),
-                  outline: const Color(0xFF2C3A56),
-                  outlineVariant: const Color(0xFF2C3A56),
-                  surfaceContainer: const Color(0xFF1D2A42),
-                  surfaceContainerLow: const Color(0xFF1D2A42),
-                ),
-            appBarTheme: const AppBarTheme(
-              backgroundColor: Color(0xFF0B1220),
-              foregroundColor: Color(0xFFF1F5F9),
-              surfaceTintColor: Colors.transparent,
-            ),
-            cardTheme: const CardThemeData(color: Color(0xFF162033)),
-            dialogTheme: const DialogThemeData(
-              backgroundColor: Color(0xFF162033),
-              surfaceTintColor: Colors.transparent,
-            ),
-            bottomSheetTheme: const BottomSheetThemeData(
-              backgroundColor: Color(0xFF162033),
-              surfaceTintColor: Colors.transparent,
-            ),
-            dividerTheme: const DividerThemeData(color: Color(0xFF2C3A56)),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFF1F5F9),
-              ),
-            ),
-          ),
+          darkTheme: FinoraTheme.darkTheme(_settings.accent),
           themeMode: _settings.themeMode,
           home: _Root(settings: _settings),
         ),
@@ -217,60 +175,84 @@ class _HomePageState extends State<HomePage> {
     ];
 
     return Scaffold(
-      body: SafeArea(child: pages[_selectedIndex]),
-      floatingActionButton: _selectedIndex == 3 || _selectedIndex == 4
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: _openAddExpense,
-              backgroundColor: context.primary,
-              foregroundColor: Colors.white,
-              elevation: context.isDark ? 1 : null,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text(
-                'Add expense',
-                style: TextStyle(fontWeight: FontWeight.w700),
+      extendBody: true,
+      body: SafeArea(bottom: false, child: pages[_selectedIndex]),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(32, 0, 32, 18),
+          child: Container(
+            decoration: BoxDecoration(
+              color: navy,
+              borderRadius: BorderRadius.circular(36),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x47111611),
+                  blurRadius: 24,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(36),
+              child: NavigationBarTheme(
+                data: NavigationBarThemeData(
+                  backgroundColor: Colors.transparent,
+                  surfaceTintColor: Colors.transparent,
+                  indicatorColor: emerald,
+                  indicatorShape: const CircleBorder(),
+                  labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+                  iconTheme: WidgetStateProperty.resolveWith(
+                    (states) => IconThemeData(
+                      size: 23,
+                      color: states.contains(WidgetState.selected)
+                          ? navy
+                          : const Color(0xFFE4EFD0),
+                    ),
+                  ),
+                ),
+                child: NavigationBar(
+                  selectedIndex: _selectedIndex,
+                  onDestinationSelected: (index) {
+                    setState(() => _selectedIndex = index);
+                  },
+                  height: 64,
+                  destinations: const [
+                    NavigationDestination(
+                      icon: Icon(Icons.home_outlined),
+                      selectedIcon: Icon(Icons.home_rounded),
+                      label: 'Home',
+                      tooltip: 'Home',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.account_balance_wallet_outlined),
+                      selectedIcon: Icon(Icons.account_balance_wallet_rounded),
+                      label: 'Budgets',
+                      tooltip: 'Budgets',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.grid_view_outlined),
+                      selectedIcon: Icon(Icons.grid_view_rounded),
+                      label: 'Categories',
+                      tooltip: 'Categories',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.bar_chart_outlined),
+                      selectedIcon: Icon(Icons.bar_chart_rounded),
+                      label: 'Reports',
+                      tooltip: 'Reports',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.settings_outlined),
+                      selectedIcon: Icon(Icons.settings_rounded),
+                      label: 'Settings',
+                      tooltip: 'Settings',
+                    ),
+                  ],
+                ),
               ),
             ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() => _selectedIndex = index);
-        },
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        indicatorColor: Theme.of(context).brightness == Brightness.dark
-            ? widget.settings.accent.withValues(alpha: 0.25)
-            : _selectedIndex == 3 || _selectedIndex == 4
-            ? const Color(0xFFECFDF5)
-            : paleBlue,
-        height: 72,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Home',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            selectedIcon: Icon(Icons.account_balance_wallet_rounded),
-            label: 'Budgets',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.grid_view_outlined),
-            selectedIcon: Icon(Icons.grid_view_rounded),
-            label: 'Categories',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart_rounded),
-            label: 'Reports',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings_rounded),
-            label: 'Settings',
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -8,30 +8,36 @@ extension AppColors on BuildContext {
   bool get isDark => Theme.of(this).brightness == Brightness.dark;
 
   /// Strong text and icons.
-  Color get ink => isDark ? const Color(0xFFF1F5F9) : navy;
+  Color get ink => isDark ? const Color(0xFFF1F6E8) : navy;
 
   /// Secondary text.
-  Color get muted => isDark ? const Color(0xFF9AA8BD) : const Color(0xFF64748B);
+  Color get muted => isDark ? const Color(0xFFA9B59B) : mutedInk;
 
   /// Hints, placeholders and disabled text.
-  Color get faint => isDark ? const Color(0xFF7B8AA0) : const Color(0xFF94A3B8);
+  Color get faint => isDark ? const Color(0xFF8E9B80) : const Color(0xFF5E6B52);
 
   /// Cards, sheets and inputs.
-  Color get surface => isDark ? const Color(0xFF162033) : Colors.white;
+  Color get surface => isDark ? const Color(0xFF161C16) : Colors.white;
 
   /// The page behind cards.
-  Color get page => isDark ? const Color(0xFF0B1220) : canvas;
+  Color get page => isDark ? const Color(0xFF0C110C) : canvas;
 
   /// Quiet fills: unselected tiles, tracks, input backgrounds.
   Color get subtle =>
-      isDark ? const Color(0xFF1D2A42) : const Color(0xFFF5F7FA);
+      isDark ? const Color(0xFF1E261E) : const Color(0xFFF1F8E4);
 
   /// Hairlines and outlines.
-  Color get line => isDark ? const Color(0xFF2C3A56) : const Color(0xFFE2E8F0);
+  Color get line => isDark ? const Color(0xFF2A322A) : hairline;
 
   /// Selected or highlighted backgrounds.
-  Color get tint => isDark ? const Color(0xFF1F3354) : paleBlue;
+  Color get tint => isDark ? const Color(0xFF26331A) : const Color(0xFFDDF59A);
 
-  /// Filled buttons and selected chips (white text sits on top).
-  Color get primary => isDark ? const Color(0xFF3B5BA9) : navy;
+  /// Filled buttons and selected chips: dark in light mode, lime in dark.
+  Color get primary => isDark ? emerald : navy;
+
+  /// Text and icons that sit on top of [primary].
+  Color get onPrimary => isDark ? navy : emerald;
+
+  /// Hero cards (balance, budget): near-black in both themes.
+  Color get hero => isDark ? const Color(0xFF1E261E) : navy;
 }

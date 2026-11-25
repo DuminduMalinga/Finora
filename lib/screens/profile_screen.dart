@@ -355,7 +355,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               tooltip: 'Edit profile picture',
                               style: IconButton.styleFrom(
                                 backgroundColor: emerald,
-                                foregroundColor: Colors.white,
+                                foregroundColor: navy,
                                 side: const BorderSide(
                                   color: Colors.white,
                                   width: 3,
@@ -433,7 +433,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.account_balance_wallet_outlined,
                     label: 'Monthly Budget',
                     amount: _lkr(store.monthlyBudget),
-                    tint: emerald,
+                    tint: navy,
                     onTap: () => _open(const BudgetOverviewScreen()),
                   ),
                 ),

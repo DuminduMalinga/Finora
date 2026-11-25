@@ -11,8 +11,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
     await (FontLoader(
-      'Inter',
-    )..addFont(rootBundle.load('assets/fonts/Inter.ttf'))).load();
+      'Outfit',
+    )..addFont(rootBundle.load('assets/fonts/Outfit.ttf'))).load();
     await (FontLoader(
       'MaterialIcons',
     )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
@@ -71,7 +71,7 @@ void main() {
           theme: ThemeData(
             brightness: Brightness.dark,
             useMaterial3: true,
-            fontFamily: 'Inter',
+            fontFamily: 'Outfit',
           ),
           home: const CategoriesScreen(expenses: sampleExpenses),
         ),

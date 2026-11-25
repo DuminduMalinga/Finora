@@ -21,44 +21,14 @@ class AppCategory {
 }
 
 const defaultCategories = [
-  AppCategory(
-    'Food',
-    Icons.restaurant_rounded,
-    Color(0xFFF97316),
-    Color(0xFFFFE7D6),
-  ),
-  AppCategory(
-    'Transport',
-    Icons.directions_car_filled_rounded,
-    Color(0xFF3B82F6),
-    paleBlue,
-  ),
-  AppCategory(
-    'Shopping',
-    Icons.shopping_bag_rounded,
-    Color(0xFFA855F7),
-    Color(0xFFF3E8FF),
-  ),
-  AppCategory('Bills', Icons.receipt_long_rounded, amber, Color(0xFFFFF4D6)),
-  AppCategory(
-    'Education',
-    Icons.school_rounded,
-    Color(0xFF6366F1),
-    Color(0xFFE0E7FF),
-  ),
-  AppCategory('Health', Icons.favorite_rounded, coral, Color(0xFFFEE2E2)),
-  AppCategory(
-    'Entertainment',
-    Icons.movie_rounded,
-    Color(0xFFEC4899),
-    Color(0xFFFCE7F3),
-  ),
-  AppCategory(
-    'Other',
-    Icons.more_horiz_rounded,
-    Color(0xFF64748B),
-    Color(0xFFE2E8F0),
-  ),
+  AppCategory('Food', Icons.restaurant_rounded, emerald, navy),
+  AppCategory('Transport', Icons.directions_car_filled_rounded, emerald, navy),
+  AppCategory('Shopping', Icons.shopping_bag_rounded, emerald, navy),
+  AppCategory('Bills', Icons.receipt_long_rounded, emerald, navy),
+  AppCategory('Education', Icons.school_rounded, emerald, navy),
+  AppCategory('Health', Icons.favorite_rounded, emerald, navy),
+  AppCategory('Entertainment', Icons.movie_rounded, emerald, navy),
+  AppCategory('Other', Icons.more_horiz_rounded, emerald, navy),
 ];
 
 /// Every icon a category or expense can use. Icons are saved by code point

@@ -44,7 +44,7 @@ class SettingsScreen extends StatelessWidget {
         child: Scaffold(
           backgroundColor: colors.surface,
           body: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 110),
             children: [
               Row(
                 children: [

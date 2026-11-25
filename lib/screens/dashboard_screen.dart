@@ -162,6 +162,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 22),
+              QuickActions(
+                items: [
+                  (Icons.add_rounded, 'Add expense', widget.onAddExpense),
+                  (
+                    Icons.format_list_bulleted_rounded,
+                    'History',
+                    () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ExpenseHistoryScreen(expenses: expenses),
+                      ),
+                    ),
+                  ),
+                  (
+                    Icons.account_balance_wallet_outlined,
+                    'Budget',
+                    () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const BudgetOverviewScreen(),
+                      ),
+                    ),
+                  ),
+                  (
+                    Icons.more_horiz_rounded,
+                    'More',
+                    () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            MonthlyReportsScreen(expenses: expenses),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 24),
               SectionHeader(
                 title: 'Spending overview',
@@ -291,15 +326,16 @@ class _HomeHeader extends StatelessWidget {
           padding: EdgeInsets.zero,
           icon: CircleAvatar(
             radius: 23,
-            backgroundColor: context.tint,
+            backgroundColor: navy,
             backgroundImage: photo == null ? null : MemoryImage(photo!),
             child: photo != null
                 ? null
                 : Text(
                     initials,
-                    style: TextStyle(
-                      color: context.ink,
-                      fontWeight: FontWeight.w800,
+                    style: const TextStyle(
+                      color: emerald,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
           ),
@@ -321,7 +357,7 @@ class _HomeHeader extends StatelessWidget {
                 style: TextStyle(
                   color: context.ink,
                   fontSize: 19,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -440,34 +476,27 @@ class BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final over = stats.remaining < 0;
+    final whole = formatAmount(stats.monthTotal).split('.');
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(28),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
         decoration: BoxDecoration(
-          color: context.primary,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x2214213D),
-              blurRadius: 16,
-              offset: Offset(0, 8),
-            ),
-          ],
+          color: context.hero,
+          borderRadius: BorderRadius.circular(28),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Text(
-                  'TOTAL SPENT',
-                  style: TextStyle(
-                    color: Color(0xFFB4C0D4),
-                    fontSize: 11,
-                    letterSpacing: 1.2,
-                    fontWeight: FontWeight.w700,
+                Text(
+                  'Spent in ${stats.monthName.split(' ').first}',
+                  style: const TextStyle(
+                    color: Color(0xFFC9D4BC),
+                    fontSize: 14,
                   ),
                 ),
                 const Spacer(),
@@ -476,71 +505,126 @@ class BalanceCard extends StatelessWidget {
                     stats.monthTotal,
                     stats.previousMonthTotal,
                   ),
-                  background: const Color(0x2234D399),
-                  upColor: const Color(0xFFFCA5A5),
-                  downColor: const Color(0xFF6EE7B7),
+                  background: emerald,
+                  upColor: navy,
+                  downColor: navy,
                   showIcon: true,
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              _rs(stats.monthTotal),
+            const SizedBox(height: 12),
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(text: 'LKR ${whole.first}'),
+                  if (whole.length > 1)
+                    TextSpan(
+                      text: '.${whole.last}',
+                      style: const TextStyle(
+                        color: Color(0xFF8E9B80),
+                        fontSize: 20,
+                      ),
+                    ),
+                ],
+              ),
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
+                fontSize: 36,
+                fontWeight: FontWeight.w600,
                 letterSpacing: -0.5,
+                height: 1,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(5),
+              child: LinearProgressIndicator(
+                value: stats.usedRatio,
+                minHeight: 10,
+                backgroundColor: const Color(0xFF2A322A),
+                valueColor: AlwaysStoppedAnimation(over ? coral : emerald),
+              ),
+            ),
+            const SizedBox(height: 10),
             Row(
               children: [
-                const Text(
-                  'Monthly budget',
-                  style: TextStyle(color: Color(0xFFB4C0D4), fontSize: 12),
+                Expanded(
+                  child: Text(
+                    '${(stats.usedRatio * 100).round()}% of '
+                    '${_rs(stats.monthlyBudget).replaceAll('.00', '')} budget',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFFC9D4BC),
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
-                const Spacer(),
                 Text(
-                  _rs(stats.monthlyBudget).replaceAll('.00', ''),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                  over
+                      ? '${_rs(-stats.remaining)} over'
+                      : '${_rs(stats.remaining)} left',
+                  style: TextStyle(
+                    color: over ? const Color(0xFFFF8A8D) : emerald,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 9),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: LinearProgressIndicator(
-                value: stats.usedRatio,
-                minHeight: 8,
-                backgroundColor: const Color(0x335B6B87),
-                valueColor: AlwaysStoppedAnimation(
-                  stats.remaining < 0 ? coral : emerald,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              stats.remaining < 0
-                  ? '${_rs(-stats.remaining)} over budget'
-                  : '${_rs(stats.remaining)} remaining',
-              style: TextStyle(
-                color: stats.remaining < 0
-                    ? const Color(0xFFFCA5A5)
-                    : const Color(0xFF9FE8C8),
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
             ),
           ],
         ),
       ),
     );
   }
+}
+
+class QuickActions extends StatelessWidget {
+  const QuickActions({super.key, required this.items});
+
+  final List<(IconData, String, VoidCallback)> items;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      for (var i = 0; i < items.length; i++)
+        InkWell(
+          onTap: items[i].$3,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: i == 0 ? emerald : context.surface,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    items[i].$1,
+                    color: i == 0 ? navy : context.ink,
+                    size: 25,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  items[i].$2,
+                  style: TextStyle(
+                    color: context.ink,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+    ],
+  );
 }
 
 class SpendingChart extends StatelessWidget {
@@ -560,7 +644,7 @@ class SpendingChart extends StatelessWidget {
       elevation: 0,
       margin: EdgeInsets.zero,
       color: context.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
         child: Column(
@@ -587,8 +671,8 @@ class SpendingChart extends StatelessWidget {
                     stats.previousWeekTotal,
                   ),
                   background: context.subtle,
-                  upColor: const Color(0xFFDC2626),
-                  downColor: const Color(0xFF059669),
+                  upColor: const Color(0xFF9A1519),
+                  downColor: const Color(0xFF2B5D12),
                 ),
               ],
             ),
@@ -607,10 +691,8 @@ class SpendingChart extends StatelessWidget {
                         width: 23,
                         height: 82 * values[index],
                         decoration: BoxDecoration(
-                          color: selected
-                              ? context.primary
-                              : const Color(0xFFB9EBD8),
-                          borderRadius: BorderRadius.circular(7),
+                          color: selected ? navy : emerald,
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       const SizedBox(height: 9),
@@ -646,7 +728,7 @@ class CategoryBreakdown extends StatelessWidget {
       elevation: 0,
       margin: EdgeInsets.zero,
       color: context.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: top.isEmpty
@@ -703,12 +785,10 @@ class CategoryProgress extends StatelessWidget {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(9),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(11),
-          ),
-          child: Icon(icon, size: 18, color: iconColor),
+          width: 40,
+          height: 40,
+          decoration: const BoxDecoration(color: navy, shape: BoxShape.circle),
+          child: Icon(icon, size: 20, color: emerald),
         ),
         const SizedBox(width: 11),
         Expanded(
@@ -743,7 +823,7 @@ class CategoryProgress extends StatelessWidget {
                   value: percent,
                   minHeight: 5,
                   backgroundColor: context.subtle,
-                  valueColor: AlwaysStoppedAnimation(iconColor),
+                  valueColor: AlwaysStoppedAnimation(context.ink),
                 ),
               ),
             ],
@@ -774,10 +854,10 @@ class SectionHeader extends StatelessWidget {
         onPressed: onTap,
         child: Text(
           action,
-          style: const TextStyle(
-            color: emerald,
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
+          style: TextStyle(
+            color: context.ink,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -792,45 +872,65 @@ class ExpenseTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(vertical: 4),
-      onTap: onTap,
-      leading: Container(
-        padding: const EdgeInsets.all(11),
-        decoration: BoxDecoration(
-          color: expense.background,
-          borderRadius: BorderRadius.circular(13),
-        ),
-        child: Icon(expense.icon, color: expense.iconColor, size: 20),
-      ),
-      title: Text(
-        expense.title,
-        style: TextStyle(
-          color: context.ink,
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: Text(
-          '${expense.category}  •  ${expense.date}',
-          style: TextStyle(fontSize: 11, color: context.faint),
-        ),
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '- ${expense.amount}',
-            style: TextStyle(
-              color: context.ink,
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: context.surface,
+        borderRadius: BorderRadius.circular(22),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(22),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: navy,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(expense.icon, color: emerald, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        expense.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: context.ink,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${expense.date} · ${expense.category}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: context.muted, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '-${expense.amount}',
+                  style: TextStyle(
+                    color: context.ink,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                ExpenseActionsMenu(expense: expense),
+              ],
             ),
           ),
-          ExpenseActionsMenu(expense: expense),
-        ],
+        ),
       ),
     );
   }

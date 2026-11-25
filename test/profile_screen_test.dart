@@ -6,8 +6,8 @@ import 'package:finora/main.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
-    final loader = FontLoader('Inter')
-      ..addFont(rootBundle.load('assets/fonts/Inter.ttf'));
+    final loader = FontLoader('Outfit')
+      ..addFont(rootBundle.load('assets/fonts/Outfit.ttf'));
     await loader.load();
     final icons = FontLoader('MaterialIcons')
       ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
